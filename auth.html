@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход | WaxCrowd</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-b from-blue-50 to-white min-h-screen flex items-center justify-center p-4">
+    <div class="max-w-md w-full bg-white rounded-xl shadow-lg p-8">
+        <div class="text-center mb-6">
+            <h1 class="text-3xl font-bold text-blue-800">🏔️ WaxCrowd</h1>
+            <p class="text-gray-600 mt-2">Краудсорс-платформа для лыжников</p>
+        </div>
+        
+        <!-- Табы -->
+        <div class="flex border-b mb-6">
+            <button id="loginTab" class="flex-1 py-2 text-center font-medium border-b-2 border-blue-600 text-blue-600">
+                Вход
+            </button>
+            <button id="signupTab" class="flex-1 py-2 text-center font-medium text-gray-500 hover:text-gray-700">
+                Регистрация
+            </button>
+        </div>
+        
+        <!-- Форма входа -->
+        <form id="loginForm" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium mb-1">Email</label>
+                <input type="email" id="loginEmail" required 
+                       class="w-full border rounded-lg p-3" placeholder="your@email.com">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Пароль</label>
+                <input type="password" id="loginPassword" required 
+                       class="w-full border rounded-lg p-3" placeholder="••••••••">
+            </div>
+            <button type="submit" 
+                    class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition">
+                Войти
+            </button>
+        </form>
+        
+        <!-- Форма регистрации (скрыта по умолчанию) -->
+        <form id="signupForm" class="space-y-4 hidden">
+            <div>
+                <label class="block text-sm font-medium mb-1">Email</label>
+                <input type="email" id="signupEmail" required 
+                       class="w-full border rounded-lg p-3" placeholder="your@email.com">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Имя (как вас называть)</label>
+                <input type="text" id="signupName" required 
+                       class="w-full border rounded-lg p-3" placeholder="Иван Петров">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Пароль</label>
+                <input type="password" id="signupPassword" required minlength="6"
+                       class="w-full border rounded-lg p-3" placeholder="Минимум 6 символов">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Подтвердите пароль</label>
+                <input type="password" id="signupConfirm" required minlength="6"
+                       class="w-full border rounded-lg p-3" placeholder="••••••••">
+            </div>
+            <button type="submit" 
+                    class="w-full bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 transition">
+                Зарегистрироваться
+            </button>
+        </form>
+        
+        <!-- Сообщения -->
+        <div id="message" class="mt-4 text-center text-sm"></div>
+        
+        <!-- Ссылка назад -->
+        <div class="mt-6 text-center">
+            <a href="index.html" class="text-blue-600 hover:underline text-sm">← На главную</a>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const SUPABASE_URL = 'https://anysqgzlkwjzbkphmsdb.supabase.co';
+            const SUPABASE_ANON_KEY = 'sb_publishable_nms9x0qfeR7JmtMls6vU6Q_HzRIKaWk';
+            const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            
+            const loginTab = document.getElementById('loginTab');
+            const signupTab = document.getElementById('signupTab');
+            const loginForm = document.getElementById('loginForm');
+            const signupForm = document.getElementById('signupForm');
+            const messageDiv = document.getElementById('message');
+            
+            // Переключение табов
+            loginTab.addEventListener('click', () => {
+                loginTab.classList.add('border-b-2', 'border-blue-600', 'text-blue-600');
+                signupTab.classList.remove('border-b-2', 'border-blue-600', 'text-blue-600');
+                signupTab.classList.add('text-gray-500');
+                loginForm.classList.remove('hidden');
+                signupForm.classList.add('hidden');
+                messageDiv.innerHTML = '';
+            });
+            
+            signupTab.addEventListener('click', () => {
+                signupTab.classList.add('border-b-2', 'border-blue-600', 'text-blue-600');
+                loginTab.classList.remove('border-b-2', 'border-blue-600', 'text-blue-600');
+                loginTab.classList.add('text-gray-500');
+                signupForm.classList.remove('hidden');
+                loginForm.classList.add('hidden');
+                messageDiv.innerHTML = '';
+            });
+            
+            // Вход
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('loginEmail').value;
+                const password = document.getElementById('loginPassword').value;
+                
+                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+                
+                if (error) {
+                    messageDiv.innerHTML = `<span class="text-red-600">❌ ${error.message}</span>`;
+                } else {
+                    messageDiv.innerHTML = '<span class="text-green-600">✅ Успешный вход!</span>';
+                    setTimeout(() => window.location.href = 'index.html', 500);
+                }
+            });
+            
+            // Регистрация
+            signupForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('signupEmail').value;
+                const name = document.getElementById('signupName').value;
+                const password = document.getElementById('signupPassword').value;
+                const confirm = document.getElementById('signupConfirm').value;
+                
+                if (password !== confirm) {
+                    messageDiv.innerHTML = '<span class="text-red-600">❌ Пароли не совпадают</span>';
+                    return;
+                }
+                
+                const { data, error } = await supabase.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        data: { full_name: name }
+                    }
+                });
+                
+                if (error) {
+                    messageDiv.innerHTML = `<span class="text-red-600">❌ ${error.message}</span>`;
+                } else {
+                    messageDiv.innerHTML = '<span class="text-green-600">✅ Регистрация успешна! Проверьте email для подтверждения.</span>';
+                    setTimeout(() => {
+                        loginTab.click();
+                    }, 2000);
+                }
+            });
+            
+            // Проверка, не залогинен ли уже
+            supabase.auth.getUser().then(({ data: { user } }) => {
+                if (user) {
+                    window.location.href = 'profile.html';
+                }
+            });
+        })();
+    </script>
+</body>
+</html>
