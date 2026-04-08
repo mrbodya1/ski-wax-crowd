@@ -194,165 +194,183 @@
     </div>
 
     <script>
-        // Инициализация Supabase
-        const SUPABASE_URL = 'https://anysqgzlkwjzbkphmsdb.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_nms9x0qfeR7JmtMls6vU6Q_HzRIKaWk';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        (function() {
+            // Инициализация Supabase
+            const SUPABASE_URL = 'https://anysqgzlkwjzbkphmsdb.supabase.co';
+            const SUPABASE_ANON_KEY = 'sb_publishable_nms9x0qfeR7JmtMls6vU6Q_HzRIKaWk';
+            const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Загрузка справочников при старте
-        async function loadReferences() {
-            // Локации
-            const { data: locations } = await supabase.from('locations').select('*').order('sort_order');
-            const locSelect = document.getElementById('location');
-            locations.forEach(l => {
-                locSelect.innerHTML += `<option value="${l.id}">${l.city} - ${l.track_name}</option>`;
-            });
+            // Загрузка справочников при старте
+            async function loadReferences() {
+                try {
+                    // Локации
+                    const { data: locations } = await supabase.from('locations').select('*').order('sort_order');
+                    const locSelect = document.getElementById('location');
+                    if (locations) {
+                        locations.forEach(l => {
+                            locSelect.innerHTML += `<option value="${l.id}">${l.city} - ${l.track_name}</option>`;
+                        });
+                    }
 
-            // Типы снега
-            const { data: snowTypes } = await supabase.from('snow_types').select('*').order('sort_order');
-            const snowDiv = document.getElementById('snowTypes');
-            snowTypes.forEach(st => {
-                snowDiv.innerHTML += `
-                    <label class="flex items-center gap-2">
-                        <input type="checkbox" value="${st.id}" class="snow-checkbox">
-                        <span class="text-sm">${st.name}</span>
-                    </label>
-                `;
-            });
+                    // Типы снега
+                    const { data: snowTypes } = await supabase.from('snow_types').select('*').order('sort_order');
+                    const snowDiv = document.getElementById('snowTypes');
+                    if (snowTypes) {
+                        snowTypes.forEach(st => {
+                            snowDiv.innerHTML += `
+                                <label class="flex items-center gap-2">
+                                    <input type="checkbox" value="${st.id}" class="snow-checkbox">
+                                    <span class="text-sm">${st.name}</span>
+                                </label>
+                            `;
+                        });
+                    }
 
-            // Стили катания
-            const { data: styles } = await supabase.from('ski_styles').select('*').order('sort_order');
-            const styleSelect = document.getElementById('skiStyle');
-            styles.forEach(s => {
-                styleSelect.innerHTML += `<option value="${s.id}">${s.name}</option>`;
-            });
+                    // Стили катания
+                    const { data: styles } = await supabase.from('ski_styles').select('*').order('sort_order');
+                    const styleSelect = document.getElementById('skiStyle');
+                    if (styles) {
+                        styles.forEach(s => {
+                            styleSelect.innerHTML += `<option value="${s.id}">${s.name}</option>`;
+                        });
+                    }
 
-            // Структуры лыж
-            const { data: structures } = await supabase.from('ski_structures').select('*').order('sort_order');
-            const structSelect = document.getElementById('skiStructure');
-            structures.forEach(s => {
-                structSelect.innerHTML += `<option value="${s.id}">${s.name}</option>`;
-            });
+                    // Структуры лыж
+                    const { data: structures } = await supabase.from('ski_structures').select('*').order('sort_order');
+                    const structSelect = document.getElementById('skiStructure');
+                    if (structures) {
+                        structures.forEach(s => {
+                            structSelect.innerHTML += `<option value="${s.id}">${s.name}</option>`;
+                        });
+                    }
 
-            // Бренды лыж
-            const { data: skiBrands } = await supabase.from('ski_brands').select('*').order('sort_order');
-            const brandSelect = document.getElementById('skiBrand');
-            skiBrands.forEach(b => {
-                brandSelect.innerHTML += `<option value="${b.id}">${b.name}</option>`;
-            });
+                    // Бренды лыж
+                    const { data: skiBrands } = await supabase.from('ski_brands').select('*').order('sort_order');
+                    const brandSelect = document.getElementById('skiBrand');
+                    if (skiBrands) {
+                        skiBrands.forEach(b => {
+                            brandSelect.innerHTML += `<option value="${b.id}">${b.name}</option>`;
+                        });
+                    }
 
-            // Бренды смазок (для всех слоев)
-            const { data: waxBrands } = await supabase.from('wax_brands').select('*').order('sort_order');
-            document.querySelectorAll('.wax-brand').forEach(select => {
-                waxBrands.forEach(b => {
-                    select.innerHTML += `<option value="${b.id}">${b.name}</option>`;
+                    // Бренды смазок (для всех слоев)
+                    const { data: waxBrands } = await supabase.from('wax_brands').select('*').order('sort_order');
+                    if (waxBrands) {
+                        document.querySelectorAll('.wax-brand').forEach(select => {
+                            waxBrands.forEach(b => {
+                                select.innerHTML += `<option value="${b.id}">${b.name}</option>`;
+                            });
+                        });
+                    }
+                } catch (err) {
+                    console.error('Ошибка загрузки справочников:', err);
+                }
+            }
+
+            // Отправка формы
+            document.getElementById('reportForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                // Проверка авторизации
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) {
+                    document.getElementById('message').innerHTML = 
+                        '<span class="text-red-600">❌ Необходимо войти в систему</span>';
+                    return;
+                }
+
+                // Сбор выбранных типов снега
+                const snowTypeIds = [];
+                document.querySelectorAll('.snow-checkbox:checked').forEach(cb => {
+                    snowTypeIds.push(cb.value);
                 });
-            });
-        }
 
-        // Отправка формы
-        document.getElementById('reportForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            // Проверка авторизации
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) {
+                if (snowTypeIds.length === 0) {
+                    alert('Выберите хотя бы один тип снега');
+                    return;
+                }
+
+                // Данные отчета
+                const reportData = {
+                    user_id: user.id,
+                    start_date: document.getElementById('startDate').value,
+                    location_id: document.getElementById('location').value,
+                    air_temp: parseInt(document.getElementById('airTemp').value),
+                    snow_temp: document.getElementById('snowTemp').value ? parseInt(document.getElementById('snowTemp').value) : null,
+                    humidity: document.getElementById('humidity').value ? parseInt(document.getElementById('humidity').value) : null,
+                    pressure: document.getElementById('pressure').value ? parseInt(document.getElementById('pressure').value) : null,
+                    snow_type_ids: snowTypeIds,
+                    ski_style_id: document.getElementById('skiStyle').value,
+                    ski_brand_id: document.getElementById('skiBrand').value,
+                    ski_model: document.getElementById('skiModel').value,
+                    ski_year: document.getElementById('skiYear').value ? parseInt(document.getElementById('skiYear').value) : null,
+                    ski_structure_id: document.getElementById('skiStructure').value || null,
+                    ski_base: document.getElementById('skiBase').value,
+                    rating: parseInt(document.getElementById('rating').value),
+                    notes: document.getElementById('notes').value
+                };
+
+                // Сохраняем отчет
+                const { data: report, error: reportError } = await supabase
+                    .from('reports')
+                    .insert(reportData)
+                    .select()
+                    .single();
+
+                if (reportError) {
+                    document.getElementById('message').innerHTML = 
+                        `<span class="text-red-600">❌ Ошибка: ${reportError.message}</span>`;
+                    return;
+                }
+
+                // Сохраняем слои смазки
+                const waxLayers = [];
+                
+                if (document.getElementById('baseWaxName').value) {
+                    waxLayers.push({
+                        report_id: report.id,
+                        layer_type: 'base',
+                        wax_brand_id: document.getElementById('baseWaxBrand').value || null,
+                        wax_name: document.getElementById('baseWaxName').value,
+                        layer_order: 1
+                    });
+                }
+                
+                if (document.getElementById('mainWaxName').value) {
+                    waxLayers.push({
+                        report_id: report.id,
+                        layer_type: 'main',
+                        wax_brand_id: document.getElementById('mainWaxBrand').value || null,
+                        wax_name: document.getElementById('mainWaxName').value,
+                        layer_order: 2
+                    });
+                }
+                
+                if (document.getElementById('topWaxName').value) {
+                    waxLayers.push({
+                        report_id: report.id,
+                        layer_type: 'top',
+                        wax_brand_id: document.getElementById('topWaxBrand').value || null,
+                        wax_name: document.getElementById('topWaxName').value,
+                        layer_order: 3
+                    });
+                }
+
+                if (waxLayers.length > 0) {
+                    await supabase.from('wax_layers').insert(waxLayers);
+                }
+
                 document.getElementById('message').innerHTML = 
-                    '<span class="text-red-600">❌ Необходимо войти в систему</span>';
-                return;
-            }
-
-            // Сбор выбранных типов снега
-            const snowTypeIds = [];
-            document.querySelectorAll('.snow-checkbox:checked').forEach(cb => {
-                snowTypeIds.push(cb.value);
+                    '<span class="text-green-600">✅ Отчет успешно сохранен!</span>';
+                
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1500);
             });
 
-            if (snowTypeIds.length === 0) {
-                alert('Выберите хотя бы один тип снега');
-                return;
-            }
-
-            // Данные отчета
-            const reportData = {
-                user_id: user.id,
-                start_date: document.getElementById('startDate').value,
-                location_id: document.getElementById('location').value,
-                air_temp: parseInt(document.getElementById('airTemp').value),
-                snow_temp: document.getElementById('snowTemp').value ? parseInt(document.getElementById('snowTemp').value) : null,
-                humidity: document.getElementById('humidity').value ? parseInt(document.getElementById('humidity').value) : null,
-                pressure: document.getElementById('pressure').value ? parseInt(document.getElementById('pressure').value) : null,
-                snow_type_ids: snowTypeIds,
-                ski_style_id: document.getElementById('skiStyle').value,
-                ski_brand_id: document.getElementById('skiBrand').value,
-                ski_model: document.getElementById('skiModel').value,
-                ski_year: document.getElementById('skiYear').value ? parseInt(document.getElementById('skiYear').value) : null,
-                ski_structure_id: document.getElementById('skiStructure').value || null,
-                ski_base: document.getElementById('skiBase').value,
-                rating: parseInt(document.getElementById('rating').value),
-                notes: document.getElementById('notes').value
-            };
-
-            // Сохраняем отчет
-            const { data: report, error: reportError } = await supabase
-                .from('reports')
-                .insert(reportData)
-                .select()
-                .single();
-
-            if (reportError) {
-                document.getElementById('message').innerHTML = 
-                    `<span class="text-red-600">❌ Ошибка: ${reportError.message}</span>`;
-                return;
-            }
-
-            // Сохраняем слои смазки
-            const waxLayers = [];
-            
-            if (document.getElementById('baseWaxName').value) {
-                waxLayers.push({
-                    report_id: report.id,
-                    layer_type: 'base',
-                    wax_brand_id: document.getElementById('baseWaxBrand').value || null,
-                    wax_name: document.getElementById('baseWaxName').value,
-                    layer_order: 1
-                });
-            }
-            
-            if (document.getElementById('mainWaxName').value) {
-                waxLayers.push({
-                    report_id: report.id,
-                    layer_type: 'main',
-                    wax_brand_id: document.getElementById('mainWaxBrand').value || null,
-                    wax_name: document.getElementById('mainWaxName').value,
-                    layer_order: 2
-                });
-            }
-            
-            if (document.getElementById('topWaxName').value) {
-                waxLayers.push({
-                    report_id: report.id,
-                    layer_type: 'top',
-                    wax_brand_id: document.getElementById('topWaxBrand').value || null,
-                    wax_name: document.getElementById('topWaxName').value,
-                    layer_order: 3
-                });
-            }
-
-            if (waxLayers.length > 0) {
-                await supabase.from('wax_layers').insert(waxLayers);
-            }
-
-            document.getElementById('message').innerHTML = 
-                '<span class="text-green-600">✅ Отчет успешно сохранен!</span>';
-            
-            setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 1500);
-        });
-
-        // Загрузка при старте
-        loadReferences();
+            // Загрузка при старте
+            loadReferences();
+        })();
     </script>
 </body>
 </html>
