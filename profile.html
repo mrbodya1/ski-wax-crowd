@@ -1,14 +1,135 @@
-// В updateAuthUI()
-if (user) {
-    authSection.innerHTML = `
-        <div class="flex items-center gap-4">
-            <a href="profile.html" class="text-gray-600 hover:text-gray-800">👤 Профиль</a>
-            <a href="report.html" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">
-                + Отчет
-            </a>
-            <button onclick="logout()" class="text-gray-600 hover:text-gray-800 text-sm">
-                Выйти
-            </button>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Профиль | WaxCrowd</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <nav class="bg-white border-b">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
+            <a href="index.html" class="text-2xl font-bold text-blue-600">❄️ WaxCrowd</a>
+            <div class="flex gap-4">
+                <a href="index.html" class="text-gray-600">Главная</a>
+                <a href="report.html" class="text-gray-600">Добавить</a>
+                <button onclick="logout()" class="text-red-600">Выйти</button>
+            </div>
         </div>
-    `;
-}
+    </nav>
+
+    <main class="max-w-4xl mx-auto px-4 py-8">
+        <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
+            <div class="flex items-center gap-4">
+                <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center text-3xl">👤</div>
+                <div class="flex-1">
+                    <h1 class="text-2xl font-bold" id="profileName"></h1>
+                    <p class="text-gray-600" id="profileEmail"></p>
+                    <p class="text-sm text-gray-500">Отчётов: <span id="reportsCount">0</span></p>
+                </div>
+                <button onclick="toggleEdit()" class="border px-4 py-2 rounded-xl">✏️ Редактировать</button>
+            </div>
+        </div>
+
+        <div id="editForm" class="bg-white rounded-2xl shadow-lg p-6 mb-6 hidden">
+            <h2 class="font-bold mb-4">Редактирование</h2>
+            <form id="profileForm" class="space-y-3">
+                <div class="grid grid-cols-2 gap-3">
+                    <input type="text" id="username" placeholder="Имя пользователя" class="border rounded-xl p-2">
+                    <input type="text" id="fullName" placeholder="Полное имя" class="border rounded-xl p-2">
+                    <input type="text" id="city" placeholder="Город" class="border rounded-xl p-2">
+                </div>
+                <textarea id="bio" placeholder="О себе" rows="3" class="w-full border rounded-xl p-2"></textarea>
+                <div class="flex gap-3">
+                    <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-xl">Сохранить</button>
+                    <button type="button" onclick="toggleEdit()" class="border px-6 py-2 rounded-xl">Отмена</button>
+                </div>
+            </form>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4">📋 Мои отчёты</h2>
+        <div id="userReports" class="space-y-3"></div>
+    </main>
+
+    <script>
+        (function() {
+            const SUPABASE_URL = 'https://anysqgzlkwjzbkphmsdb.supabase.co';
+            const SUPABASE_ANON_KEY = 'sb_publishable_nms9x0qfeR7JmtMls6vU6Q_HzRIKaWk';
+            const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+            let currentUser = null;
+            let currentProfile = null;
+
+            async function init() {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) { window.location.href = 'auth.html'; return; }
+                currentUser = user;
+
+                const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+                if (!profile) {
+                    await supabase.from('profiles').insert({ id: user.id, username: user.email, full_name: user.email });
+                    currentProfile = { username: user.email, full_name: user.email };
+                } else {
+                    currentProfile = profile;
+                }
+
+                document.getElementById('profileName').textContent = currentProfile.full_name || currentProfile.username;
+                document.getElementById('profileEmail').textContent = user.email;
+                document.getElementById('reportsCount').textContent = currentProfile.reports_count || 0;
+
+                document.getElementById('username').value = currentProfile.username || '';
+                document.getElementById('fullName').value = currentProfile.full_name || '';
+                document.getElementById('city').value = currentProfile.city || '';
+                document.getElementById('bio').value = currentProfile.bio || '';
+
+                loadUserReports();
+            }
+
+            window.toggleEdit = () => document.getElementById('editForm').classList.toggle('hidden');
+
+            document.getElementById('profileForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const updates = {
+                    username: document.getElementById('username').value,
+                    full_name: document.getElementById('fullName').value,
+                    city: document.getElementById('city').value,
+                    bio: document.getElementById('bio').value
+                };
+                await supabase.from('profiles').update(updates).eq('id', currentUser.id);
+                location.reload();
+            });
+
+            async function loadUserReports() {
+                const { data: reports } = await supabase
+                    .from('reports')
+                    .select('id, report_type, start_date, country, city, location_name, air_temp, track_condition, rating, comment')
+                    .eq('user_id', currentUser.id)
+                    .order('created_at', { ascending: false });
+
+                const container = document.getElementById('userReports');
+                if (!reports?.length) {
+                    container.innerHTML = '<div class="text-gray-500 text-center py-8">Нет отчётов</div>';
+                    return;
+                }
+
+                container.innerHTML = reports.map(r => `
+                    <div class="bg-white rounded-xl p-4 shadow-sm border">
+                        <div class="flex justify-between">
+                            <span>${r.report_type === 'glide' ? '⛷️ Скольжение' : '🎯 Держание'}</span>
+                            <span class="text-yellow-500">${'❄️'.repeat(r.rating)}</span>
+                        </div>
+                        <div class="text-sm text-gray-600">${r.country}, ${r.city} — ${r.location_name} • ${new Date(r.start_date).toLocaleDateString('ru-RU')}</div>
+                        <div class="text-sm">${r.air_temp}°C • ${r.track_condition}</div>
+                        ${r.comment ? `<p class="text-sm mt-1">💬 ${r.comment}</p>` : ''}
+                    </div>
+                `).join('');
+            }
+
+            window.logout = async () => { await supabase.auth.signOut(); window.location.href = 'index.html'; };
+
+            init();
+        })();
+    </script>
+</body>
+</html>
