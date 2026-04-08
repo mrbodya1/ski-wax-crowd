@@ -1,1 +1,223 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WaxCrowd | Краудсорс смазок</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-b from-blue-50 to-white min-h-screen">
+    
+    <!-- Навигация -->
+    <nav class="bg-white shadow-sm">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-blue-800">🏔️ WaxCrowd</h1>
+            <div id="authSection">
+                <!-- Заполняется через JS -->
+            </div>
+        </div>
+    </nav>
 
+    <!-- Главный блок -->
+    <main class="max-w-4xl mx-auto px-4 py-12">
+        
+        <!-- Hero секция -->
+        <div class="text-center mb-12">
+            <h2 class="text-4xl font-bold text-gray-800 mb-4">
+                Реальные рекомендации смазок<br>от реальных лыжников
+            </h2>
+            <p class="text-xl text-gray-600 mb-8">
+                Краудсорс-платформа для обмена опытом. Учитываем тип лыж, погоду и состояние снега.
+            </p>
+            <a href="report.html" 
+               class="inline-block bg-blue-600 text-white px-8 py-4 rounded-lg text-lg font-bold hover:bg-blue-700 transition">
+                + Добавить свой отчет
+            </a>
+        </div>
+
+        <!-- Как это работает -->
+        <div class="grid md:grid-cols-3 gap-6 mb-12">
+            <div class="bg-white rounded-xl shadow p-6 text-center">
+                <div class="text-4xl mb-3">📝</div>
+                <h3 class="font-bold text-lg mb-2">1. Оставьте отчет</h3>
+                <p class="text-gray-600">Укажите погоду, лыжи и смазку, которую использовали</p>
+            </div>
+            <div class="bg-white rounded-xl shadow p-6 text-center">
+                <div class="text-4xl mb-3">📊</div>
+                <h3 class="font-bold text-lg mb-2">2. Данные накапливаются</h3>
+                <p class="text-gray-600">Система собирает статистику по трассам и условиям</p>
+            </div>
+            <div class="bg-white rounded-xl shadow p-6 text-center">
+                <div class="text-4xl mb-3">🎯</div>
+                <h3 class="font-bold text-lg mb-2">3. Получите рекомендации</h3>
+                <p class="text-gray-600">Топ смазок для ваших конкретных условий (скоро)</p>
+            </div>
+        </div>
+
+        <!-- Последние отчеты -->
+        <div class="bg-white rounded-xl shadow p-6">
+            <h3 class="font-bold text-xl mb-4">📋 Последние отчеты</h3>
+            <div id="recentReports" class="space-y-3">
+                <!-- Заполняется через JS -->
+                <div class="text-center text-gray-500 py-8">Загрузка...</div>
+            </div>
+        </div>
+
+        <!-- Статистика -->
+        <div class="mt-12 grid grid-cols-3 gap-4 text-center">
+            <div class="bg-white rounded-lg p-4">
+                <div class="text-3xl font-bold text-blue-600" id="totalReports">0</div>
+                <div class="text-gray-600">отчетов</div>
+            </div>
+            <div class="bg-white rounded-lg p-4">
+                <div class="text-3xl font-bold text-blue-600" id="totalLocations">0</div>
+                <div class="text-gray-600">трасс</div>
+            </div>
+            <div class="bg-white rounded-lg p-4">
+                <div class="text-3xl font-bold text-blue-600" id="totalUsers">0</div>
+                <div class="text-gray-600">лыжников</div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Футер -->
+    <footer class="border-t mt-16 py-6 text-center text-gray-500 text-sm">
+        WaxCrowd MVP • Данные обновляются в реальном времени
+    </footer>
+
+    <script>
+        // Конфигурация Supabase
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+        const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Проверка авторизации и отображение кнопок
+        async function updateAuthUI() {
+            const { data: { user } } = await supabase.auth.getUser();
+            const authSection = document.getElementById('authSection');
+            
+            if (user) {
+                authSection.innerHTML = `
+                    <div class="flex items-center gap-4">
+                        <span class="text-sm text-gray-600">${user.email}</span>
+                        <a href="report.html" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">
+                            + Отчет
+                        </a>
+                        <button onclick="logout()" class="text-gray-600 hover:text-gray-800 text-sm">
+                            Выйти
+                        </button>
+                    </div>
+                `;
+            } else {
+                authSection.innerHTML = `
+                    <a href="login.html" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                        Войти
+                    </a>
+                `;
+            }
+        }
+
+        // Выход
+        window.logout = async function() {
+            await supabase.auth.signOut();
+            window.location.reload();
+        };
+
+        // Загрузка последних отчетов
+        async function loadRecentReports() {
+            const { data: reports, error } = await supabase
+                .from('reports')
+                .select(`
+                    id,
+                    created_at,
+                    air_temp,
+                    rating,
+                    locations(city, track_name),
+                    ski_styles(name),
+                    wax_layers(wax_name, wax_brands(name))
+                `)
+                .order('created_at', { ascending: false })
+                .limit(5);
+
+            const container = document.getElementById('recentReports');
+            
+            if (error || !reports || reports.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-gray-500 py-8">
+                        Пока нет отчетов. <a href="report.html" class="text-blue-600">Будьте первым!</a>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = reports.map(r => {
+                const date = new Date(r.created_at).toLocaleDateString('ru-RU');
+                const location = r.locations ? `${r.locations.city} — ${r.locations.track_name}` : '—';
+                const skiStyle = r.ski_styles?.name || '—';
+                const waxes = r.wax_layers?.map(w => w.wax_name).join(' + ') || 'не указана';
+                
+                return `
+                    <div class="border-b pb-3 last:border-0">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="font-medium">${location}</span>
+                                <span class="text-sm text-gray-500 ml-2">${date}</span>
+                            </div>
+                            <span class="text-yellow-500 font-bold">⭐ ${r.rating}/10</span>
+                        </div>
+                        <div class="text-sm text-gray-600 mt-1">
+                            ${r.air_temp}°C • ${skiStyle} • ${waxes}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Загрузка статистики
+        async function loadStats() {
+            // Количество отчетов
+            const { count: reportsCount } = await supabase
+                .from('reports')
+                .select('*', { count: 'exact', head: true });
+            document.getElementById('totalReports').textContent = reportsCount || 0;
+
+            // Количество локаций
+            const { count: locationsCount } = await supabase
+                .from('locations')
+                .select('*', { count: 'exact', head: true });
+            document.getElementById('totalLocations').textContent = locationsCount || 0;
+
+            // Количество пользователей (приблизительно, по уникальным user_id в отчетах)
+            const { data: users } = await supabase
+                .from('reports')
+                .select('user_id');
+            
+            const uniqueUsers = users ? new Set(users.map(u => u.user_id)).size : 0;
+            document.getElementById('totalUsers').textContent = uniqueUsers;
+        }
+
+        // Инициализация
+        async function init() {
+            await updateAuthUI();
+            await loadRecentReports();
+            await loadStats();
+            
+            // Подписка на изменения в реальном времени
+            supabase
+                .channel('reports-changes')
+                .on('postgres_changes', 
+                    { event: 'INSERT', schema: 'public', table: 'reports' }, 
+                    () => {
+                        loadRecentReports();
+                        loadStats();
+                    }
+                )
+                .subscribe();
+        }
+
+        init();
+    </script>
+</body>
+</html>
