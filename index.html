@@ -25,21 +25,10 @@
             background-size: cover;
             opacity: 0.5;
         }
-        .snowflake-bg {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-        }
         .stat-card {
             background: rgba(255,255,255,0.08);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255,255,255,0.1);
-        }
-        .feature-icon {
-            background: linear-gradient(135deg, #3b82f6, #2563eb);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
         }
         .btn-primary {
             background: linear-gradient(135deg, #3b82f6, #2563eb);
@@ -293,15 +282,16 @@
                 window.location.reload();
             };
 
-            // Загрузка отчётов
+            // Загрузка отчётов (ИСПРАВЛЕНО)
             async function loadReports() {
+                // Загружаем отчёты без profiles
                 const { data: reports, error } = await supabase
                     .from('reports')
                     .select(`
                         id, report_type, start_date, country, city, location_name,
                         air_temp, track_condition, snow_type, rating, comment, 
                         snowflakes_total, snowflakes_count,
-                        profiles(username, full_name),
+                        user_id,
                         wax_layers(wax_brand, wax_name)
                     `)
                     .order('created_at', { ascending: false })
@@ -313,7 +303,36 @@
                     return;
                 }
 
-                allReports = reports || [];
+                if (!reports || reports.length === 0) {
+                    allReports = [];
+                    document.getElementById('reportsList').innerHTML = '<div class="text-center text-gray-500 py-12">Пока нет отчётов. <a href="report.html" class="text-blue-600">Будьте первым!</a></div>';
+                    updateStats([]);
+                    return;
+                }
+
+                // Загружаем профили отдельно
+                const userIds = [...new Set(reports.map(r => r.user_id).filter(Boolean))];
+                
+                if (userIds.length > 0) {
+                    const { data: profiles } = await supabase
+                        .from('profiles')
+                        .select('id, username, full_name')
+                        .in('id', userIds);
+                    
+                    const profilesMap = {};
+                    profiles?.forEach(p => { profilesMap[p.id] = p; });
+
+                    allReports = reports.map(r => ({
+                        ...r,
+                        profiles: profilesMap[r.user_id] || { username: 'Аноним', full_name: 'Аноним' }
+                    }));
+                } else {
+                    allReports = reports.map(r => ({
+                        ...r,
+                        profiles: { username: 'Аноним', full_name: 'Аноним' }
+                    }));
+                }
+
                 filterReports();
                 updateStats(reports);
             }
@@ -330,7 +349,7 @@
                 const container = document.getElementById('reportsList');
                 
                 if (!reports.length) {
-                    container.innerHTML = '<div class="text-center text-gray-500 py-12">Пока нет отчётов. <a href="report.html" class="text-blue-600">Будьте первым!</a></div>';
+                    container.innerHTML = '<div class="text-center text-gray-500 py-12">Нет отчётов с таким фильтром</div>';
                     return;
                 }
 
@@ -339,7 +358,7 @@
                     const author = r.profiles?.full_name || r.profiles?.username || 'Аноним';
                     const typeIcon = r.report_type === 'glide' ? '⛷️' : '🎯';
                     const typeName = r.report_type === 'glide' ? 'Скольжение' : 'Держание';
-                    const waxes = r.wax_layers?.map(l => l.wax_name).join(' + ') || '—';
+                    const waxes = r.wax_layers?.map(l => l.wax_name).filter(Boolean).join(' + ') || '—';
 
                     return `
                         <div class="report-card bg-white rounded-xl p-5">
@@ -388,7 +407,7 @@
             function updateStats(reports) {
                 const count = reports?.length || 0;
                 const locations = new Set(reports?.map(r => `${r.country}-${r.city}-${r.location_name}`)).size;
-                const users = new Set(reports?.map(r => r.profiles?.username)).size;
+                const users = new Set(reports?.map(r => r.user_id)).size;
                 
                 document.getElementById('heroReportsCount').textContent = count;
                 document.getElementById('heroLocationsCount').textContent = locations;
@@ -417,7 +436,7 @@
                 filterReports();
             }
 
-            // Кнопка "Подобрать смазку" (пока не рабочая)
+            // Кнопка "Подобрать смазку"
             document.getElementById('heroFindWax').addEventListener('click', () => {
                 alert('🔜 Функция подбора смазки появится совсем скоро! А пока — посмотрите последние отчёты ниже.');
                 document.querySelector('#filterAll').scrollIntoView({ behavior: 'smooth', block: 'center' });
