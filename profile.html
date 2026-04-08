@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Личный кабинет | WaxCrowd</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    
+    <!-- Навигация -->
+    <nav class="bg-white shadow-sm">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+            <a href="index.html" class="text-2xl font-bold text-blue-800">🏔️ WaxCrowd</a>
+            <div class="flex gap-4">
+                <a href="index.html" class="text-gray-600 hover:text-gray-800">Главная</a>
+                <a href="report.html" class="text-gray-600 hover:text-gray-800">Добавить отчет</a>
+                <button onclick="logout()" class="text-red-600 hover:text-red-800">Выйти</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-4xl mx-auto px-4 py-8">
+        
+        <!-- Заголовок профиля -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+            <div class="flex items-center gap-6">
+                <div class="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center text-4xl">
+                    <span id="avatarPlaceholder">👤</span>
+                </div>
+                <div class="flex-1">
+                    <h1 class="text-2xl font-bold" id="profileName">Загрузка...</h1>
+                    <p class="text-gray-600" id="profileEmail"></p>
+                    <p class="text-sm text-gray-500 mt-1">
+                        Отчетов: <span id="reportsCount">0</span> • 
+                        На сайте с <span id="memberSince"></span>
+                    </p>
+                </div>
+                <button onclick="toggleEdit()" class="px-4 py-2 border rounded-lg hover:bg-gray-50">
+                    ✏️ Редактировать
+                </button>
+            </div>
+        </div>
+        
+        <!-- Форма редактирования (скрыта по умолчанию) -->
+        <div id="editForm" class="bg-white rounded-xl shadow-lg p-6 mb-6 hidden">
+            <h2 class="text-xl font-bold mb-4">Редактирование профиля</h2>
+            
+            <form id="profileForm" class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Имя пользователя</label>
+                        <input type="text" id="username" class="w-full border rounded-lg p-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Полное имя</label>
+                        <input type="text" id="fullName" class="w-full border rounded-lg p-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Город</label>
+                        <input type="text" id="city" class="w-full border rounded-lg p-2" placeholder="Москва">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Вес (кг)</label>
+                        <input type="number" id="weight" min="30" max="150" class="w-full border rounded-lg p-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Уровень катания</label>
+                        <select id="skillLevel" class="w-full border rounded-lg p-2">
+                            <option value="">Выберите...</option>
+                            <option value="beginner">Начинающий</option>
+                            <option value="amateur">Любитель</option>
+                            <option value="pro">Профессионал</option>
+                            <option value="coach">Тренер / Механик</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Предпочитаемый стиль</label>
+                        <select id="preferredStyle" class="w-full border rounded-lg p-2">
+                            <option value="">Выберите...</option>
+                            <option value="classic">Классика</option>
+                            <option value="skate">Конек</option>
+                            <option value="combi">Комби</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">О себе</label>
+                    <textarea id="bio" rows="3" class="w-full border rounded-lg p-2" 
+                              placeholder="Расскажите о себе, опыте, любимых трассах..."></textarea>
+                </div>
+                <div class="flex gap-3">
+                    <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
+                        Сохранить
+                    </button>
+                    <button type="button" onclick="toggleEdit()" class="border px-6 py-2 rounded-lg hover:bg-gray-50">
+                        Отмена
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Последние отчеты пользователя -->
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <h2 class="text-xl font-bold mb-4">📋 Мои последние отчеты</h2>
+            <div id="userReports" class="space-y-3">
+                <div class="text-center text-gray-500 py-4">Загрузка...</div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        (function() {
+            const SUPABASE_URL = 'https://anysqgzlkwjzbkphmsdb.supabase.co';
+            const SUPABASE_ANON_KEY = 'sb_publishable_nms9x0qfeR7JmtMls6vU6Q_HzRIKaWk';
+            const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            
+            let currentUser = null;
+            let currentProfile = null;
+            
+            // Проверка авторизации
+           
