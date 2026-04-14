@@ -220,12 +220,228 @@
                 });
             }
 
+            // =============================================
+            // АВТОКОМПЛИТ ДЛЯ БРЕНДОВ СМАЗОК
+            // =============================================
+            function initWaxBrandAutocomplete(inputId, suggestionsId, brandIdInput, isCustomInput) {
+                const input = document.getElementById(inputId);
+                const suggestionsDiv = document.getElementById(suggestionsId);
+                const brandIdField = document.getElementById(brandIdInput);
+                const isCustomField = document.getElementById(isCustomInput);
+                
+                let debounceTimer;
+                
+                input.addEventListener('input', async (e) => {
+                    clearTimeout(debounceTimer);
+                    const query = e.target.value.trim();
+                    
+                    if (query.length < 1) {
+                        suggestionsDiv.classList.add('hidden');
+                        return;
+                    }
+                    
+                    debounceTimer = setTimeout(async () => {
+                        const { data: brands } = await supabase
+                            .from('wax_brands')
+                            .select('id, name')
+                            .ilike('name', `${query}%`)
+                            .order('sort_order')
+                            .limit(8);
+                        
+                        const { data: userBrands } = await supabase
+                            .from('user_wax_brands')
+                            .select('id, name')
+                            .ilike('name', `${query}%`)
+                            .eq('status', 'approved')
+                            .limit(5);
+                        
+                        const allBrands = [...(brands || []), ...(userBrands || [])];
+                        
+                        if (allBrands.length === 0) {
+                            suggestionsDiv.innerHTML = `
+                                <div class="p-3 text-sm">
+                                    <p class="text-gray-500 mb-2">Бренд не найден</p>
+                                    <button type="button" onclick="window.addCustomWaxBrand('${inputId}', '${query.replace(/'/g, "\\'")}')" 
+                                            class="w-full bg-teal-50 text-teal-700 px-3 py-2 rounded-lg text-sm hover:bg-teal-100">
+                                        + Добавить новый бренд "${query}"
+                                    </button>
+                                </div>
+                            `;
+                            suggestionsDiv.classList.remove('hidden');
+                            return;
+                        }
+                        
+                        suggestionsDiv.innerHTML = allBrands.map(b => `
+                            <div class="suggestion-item px-4 py-2 hover:bg-teal-50 cursor-pointer border-b last:border-0" 
+                                 data-id="${b.id}" data-name="${b.name}">
+                                <span class="font-medium">${b.name}</span>
+                            </div>
+                        `).join('');
+                        
+                        suggestionsDiv.classList.remove('hidden');
+                        
+                        suggestionsDiv.querySelectorAll('.suggestion-item').forEach(el => {
+                            el.addEventListener('click', () => {
+                                input.value = el.dataset.name;
+                                brandIdField.value = el.dataset.id;
+                                isCustomField.value = 'false';
+                                suggestionsDiv.classList.add('hidden');
+                            });
+                        });
+                    }, 300);
+                });
+                
+                document.addEventListener('click', (e) => {
+                    if (!input.contains(e.target) && !suggestionsDiv.contains(e.target)) {
+                        suggestionsDiv.classList.add('hidden');
+                    }
+                });
+            }
+
+            // =============================================
+            // АВТОКОМПЛИТ ДЛЯ НАЗВАНИЙ СМАЗОК
+            // =============================================
+            function initWaxProductAutocomplete(inputId, suggestionsId, productIdInput, isCustomInput, brandInputId) {
+                const input = document.getElementById(inputId);
+                const suggestionsDiv = document.getElementById(suggestionsId);
+                const productIdField = document.getElementById(productIdInput);
+                const isCustomField = document.getElementById(isCustomInput);
+                const brandInput = document.getElementById(brandInputId);
+                
+                let debounceTimer;
+                
+                input.addEventListener('input', async (e) => {
+                    clearTimeout(debounceTimer);
+                    const query = e.target.value.trim();
+                    const brandName = brandInput.value;
+                    
+                    if (query.length < 1) {
+                        suggestionsDiv.classList.add('hidden');
+                        return;
+                    }
+                    
+                    debounceTimer = setTimeout(async () => {
+                        let allProducts = [];
+                        
+                        if (brandName) {
+                            const { data: products } = await supabase
+                                .from('wax_products')
+                                .select('id, name, wax_brands!inner(name)')
+                                .ilike('name', `${query}%`)
+                                .eq('wax_brands.name', brandName)
+                                .limit(8);
+                            allProducts = products || [];
+                        }
+                        
+                        const { data: userProducts } = await supabase
+                            .from('user_wax_products')
+                            .select('id, product_name')
+                            .ilike('product_name', `${query}%`)
+                            .eq('status', 'approved')
+                            .eq('brand_name', brandName)
+                            .limit(5);
+                        
+                        if (userProducts) {
+                            allProducts = [...allProducts, ...userProducts.map(p => ({ id: p.id, name: p.product_name }))];
+                        }
+                        
+                        if (allProducts.length === 0) {
+                            suggestionsDiv.innerHTML = `
+                                <div class="p-3 text-sm">
+                                    <p class="text-gray-500 mb-2">Смазка не найдена</p>
+                                    <button type="button" onclick="window.addCustomWaxProduct('${inputId}', '${query.replace(/'/g, "\\'")}')" 
+                                            class="w-full bg-teal-50 text-teal-700 px-3 py-2 rounded-lg text-sm hover:bg-teal-100">
+                                        + Добавить новую смазку "${query}"
+                                    </button>
+                                </div>
+                            `;
+                            suggestionsDiv.classList.remove('hidden');
+                            return;
+                        }
+                        
+                        suggestionsDiv.innerHTML = allProducts.map(p => `
+                            <div class="suggestion-item px-4 py-2 hover:bg-teal-50 cursor-pointer border-b last:border-0" 
+                                 data-id="${p.id}" data-name="${p.name}">
+                                <span class="font-medium">${p.name}</span>
+                            </div>
+                        `).join('');
+                        
+                        suggestionsDiv.classList.remove('hidden');
+                        
+                        suggestionsDiv.querySelectorAll('.suggestion-item').forEach(el => {
+                            el.addEventListener('click', () => {
+                                input.value = el.dataset.name;
+                                productIdField.value = el.dataset.id;
+                                isCustomField.value = 'false';
+                                suggestionsDiv.classList.add('hidden');
+                            });
+                        });
+                    }, 300);
+                });
+                
+                document.addEventListener('click', (e) => {
+                    if (!input.contains(e.target) && !suggestionsDiv.contains(e.target)) {
+                        suggestionsDiv.classList.add('hidden');
+                    }
+                });
+            }
+
+            // =============================================
+            // ДОБАВЛЕНИЕ ПОЛЬЗОВАТЕЛЬСКОГО БРЕНДА СМАЗКИ
+            // =============================================
+            window.addCustomWaxBrand = async function(inputId, brandName) {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) { alert('Войдите в систему'); return; }
+                
+                const { error } = await supabase
+                    .from('user_wax_brands')
+                    .insert({ user_id: user.id, name: brandName, status: 'pending' });
+                
+                if (error) {
+                    if (error.code === '23505') alert('Этот бренд уже есть в базе или ожидает модерации');
+                    else alert('Не удалось добавить бренд');
+                    return;
+                }
+                
+                document.getElementById(inputId).value = brandName;
+                alert(`Бренд "${brandName}" отправлен на модерацию`);
+            };
+
+            // =============================================
+            // ДОБАВЛЕНИЕ ПОЛЬЗОВАТЕЛЬСКОЙ СМАЗКИ
+            // =============================================
+            window.addCustomWaxProduct = async function(inputId, productName) {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) { alert('Войдите в систему'); return; }
+                
+                const brandName = document.querySelector(`[id^="${inputId.replace('Name', 'Brand')}"]`)?.value;
+                if (!brandName) { alert('Сначала укажите бренд'); return; }
+                
+                const { error } = await supabase
+                    .from('user_wax_products')
+                    .insert({ user_id: user.id, brand_name: brandName, product_name: productName, status: 'pending' });
+                
+                if (error) { alert('Не удалось добавить смазку'); return; }
+                
+                document.getElementById(inputId).value = productName;
+                alert(`Смазка "${productName}" отправлена на модерацию`);
+            };
+
             function renderLayers() {
                 const container = document.getElementById('waxLayers');
                 container.innerHTML = '';
                 for (let i = 0; i < layerCount; i++) {
                     const isGrip = reportType.value === 'grip';
                     const layerLabel = isGrip ? ['База (грунт)', 'Основа', 'Финиш'][i] || `Слой ${i+1}` : `Слой ${i+1}`;
+                    const brandInputId = `layer${i}WaxBrandInput`;
+                    const brandSuggestionsId = `layer${i}BrandSuggestions`;
+                    const brandIdId = `layer${i}WaxBrandId`;
+                    const isCustomBrandId = `layer${i}IsCustomBrand`;
+                    const nameInputId = `layer${i}WaxNameInput`;
+                    const nameSuggestionsId = `layer${i}NameSuggestions`;
+                    const nameIdId = `layer${i}WaxNameId`;
+                    const isCustomNameId = `layer${i}IsCustomName`;
+                    
                     container.innerHTML += `
                         <div class="border rounded-xl p-3 mb-3 bg-gray-50">
                             <div class="flex justify-between items-center mb-2">
@@ -233,14 +449,41 @@
                                 ${i > 0 ? `<button type="button" class="remove-layer text-red-500 text-sm" data-index="${i}">✕</button>` : ''}
                             </div>
                             <div class="grid grid-cols-2 gap-2">
-                                <input type="text" placeholder="Бренд" class="layer-brand border rounded-lg p-2">
-                                <input type="text" placeholder="Название" class="layer-name border rounded-lg p-2">
+                                <div class="relative">
+                                    <input type="text" id="${brandInputId}" placeholder="Бренд" class="layer-brand border rounded-lg p-2" autocomplete="off">
+                                    <input type="hidden" id="${brandIdId}">
+                                    <input type="hidden" id="${isCustomBrandId}" value="false">
+                                    <div id="${brandSuggestionsId}" class="absolute z-40 w-full bg-white border rounded-xl shadow-lg mt-1 hidden max-h-60 overflow-y-auto"></div>
+                                </div>
+                                <div class="relative">
+                                    <input type="text" id="${nameInputId}" placeholder="Название" class="layer-name border rounded-lg p-2" autocomplete="off">
+                                    <input type="hidden" id="${nameIdId}">
+                                    <input type="hidden" id="${isCustomNameId}" value="false">
+                                    <div id="${nameSuggestionsId}" class="absolute z-40 w-full bg-white border rounded-xl shadow-lg mt-1 hidden max-h-60 overflow-y-auto"></div>
+                                </div>
                                 <input type="text" placeholder="Диапазон (-2/-8)" class="layer-range border rounded-lg p-2">
                                 <input type="text" placeholder="Примечание" class="layer-notes border rounded-lg p-2">
                             </div>
                         </div>
                     `;
                 }
+                
+                for (let i = 0; i < layerCount; i++) {
+                    initWaxBrandAutocomplete(
+                        `layer${i}WaxBrandInput`,
+                        `layer${i}BrandSuggestions`,
+                        `layer${i}WaxBrandId`,
+                        `layer${i}IsCustomBrand`
+                    );
+                    initWaxProductAutocomplete(
+                        `layer${i}WaxNameInput`,
+                        `layer${i}NameSuggestions`,
+                        `layer${i}WaxNameId`,
+                        `layer${i}IsCustomName`,
+                        `layer${i}WaxBrandInput`
+                    );
+                }
+                
                 document.querySelectorAll('.remove-layer').forEach(btn => {
                     btn.addEventListener('click', () => {
                         layerCount--;
@@ -263,7 +506,6 @@
                 
                 let debounceTimer;
                 let selectedIndex = -1;
-                let currentSuggestions = [];
                 
                 cityInput.addEventListener('input', async (e) => {
                     clearTimeout(debounceTimer);
@@ -271,7 +513,6 @@
                     
                     if (query.length < 2) {
                         suggestionsDiv.classList.add('hidden');
-                        currentSuggestions = [];
                         return;
                     }
                     
@@ -283,97 +524,34 @@
                             .order('population', { ascending: false })
                             .limit(8);
                         
-                        currentSuggestions = cities || [];
-                        renderCitySuggestions(currentSuggestions);
+                        if (!cities || cities.length === 0) {
+                            suggestionsDiv.innerHTML = '<div class="px-4 py-2 text-gray-500">Город не найден</div>';
+                            suggestionsDiv.classList.remove('hidden');
+                            return;
+                        }
+                        
+                        suggestionsDiv.innerHTML = cities.map((city, index) => `
+                            <div class="suggestion-item px-4 py-2 hover:bg-teal-50 cursor-pointer border-b last:border-0 flex justify-between items-center" 
+                                 data-id="${city.id}" data-name="${city.name}" data-region="${city.region_name}" data-label="${city.label}">
+                                <span>
+                                    <span class="font-medium">${city.name}</span>
+                                    <span class="text-sm text-gray-500 ml-2">${city.region_name}</span>
+                                </span>
+                            </div>
+                        `).join('');
+                        
+                        suggestionsDiv.classList.remove('hidden');
+                        
+                        document.querySelectorAll('#citySuggestions .suggestion-item').forEach(el => {
+                            el.addEventListener('click', () => {
+                                cityInput.value = el.dataset.label || `${el.dataset.name} (${el.dataset.region})`;
+                                document.getElementById('cityId').value = el.dataset.id;
+                                document.getElementById('cityRegion').value = el.dataset.region;
+                                suggestionsDiv.classList.add('hidden');
+                            });
+                        });
                     }, 300);
                 });
-                
-                function renderCitySuggestions(cities) {
-                    if (!cities || cities.length === 0) {
-                        performFuzzyCitySearch(cityInput.value.trim());
-                        return;
-                    }
-                    
-                    suggestionsDiv.innerHTML = cities.map((city, index) => `
-                        <div class="suggestion-item px-4 py-2 hover:bg-teal-50 cursor-pointer border-b last:border-0 flex justify-between items-center" 
-                             data-index="${index}" data-id="${city.id}" data-name="${city.name}" 
-                             data-region="${city.region_name}" data-label="${city.label}">
-                            <span>
-                                <span class="font-medium">${city.name}</span>
-                                <span class="text-sm text-gray-500 ml-2">${city.region_name}</span>
-                            </span>
-                            <span class="text-xs text-gray-400">${city.population ? Math.round(city.population / 1000) + 'k' : ''}</span>
-                        </div>
-                    `).join('');
-                    
-                    suggestionsDiv.classList.remove('hidden');
-                    selectedIndex = -1;
-                    
-                    document.querySelectorAll('#citySuggestions .suggestion-item').forEach(el => {
-                        el.addEventListener('click', () => selectCity(el.dataset));
-                    });
-                }
-                
-                async function performFuzzyCitySearch(query) {
-                    if (query.length < 3) {
-                        suggestionsDiv.innerHTML = '<div class="px-4 py-2 text-gray-500">Введите ещё пару букв...</div>';
-                        suggestionsDiv.classList.remove('hidden');
-                        return;
-                    }
-                    
-                    const { data: cities } = await supabase
-                        .from('cities')
-                        .select('id, name, region_name, population, label')
-                        .ilike('name', `%${query}%`)
-                        .order('population', { ascending: false })
-                        .limit(8);
-                    
-                    if (!cities || cities.length === 0) {
-                        suggestionsDiv.innerHTML = '<div class="px-4 py-2 text-gray-500">Город не найден</div>';
-                        suggestionsDiv.classList.remove('hidden');
-                        return;
-                    }
-                    
-                    currentSuggestions = cities;
-                    renderCitySuggestions(cities);
-                }
-                
-                function selectCity(data) {
-                    cityInput.value = data.label || `${data.name} (${data.region})`;
-                    document.getElementById('cityId').value = data.id;
-                    document.getElementById('cityRegion').value = data.region;
-                    suggestionsDiv.classList.add('hidden');
-                }
-                
-                cityInput.addEventListener('keydown', (e) => {
-                    const items = document.querySelectorAll('#citySuggestions .suggestion-item');
-                    if (e.key === 'ArrowDown') {
-                        e.preventDefault();
-                        selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
-                        updateSelection(items);
-                    } else if (e.key === 'ArrowUp') {
-                        e.preventDefault();
-                        selectedIndex = Math.max(selectedIndex - 1, 0);
-                        updateSelection(items);
-                    } else if (e.key === 'Enter' && selectedIndex >= 0) {
-                        e.preventDefault();
-                        const selected = items[selectedIndex];
-                        if (selected) selectCity(selected.dataset);
-                    } else if (e.key === 'Escape') {
-                        suggestionsDiv.classList.add('hidden');
-                    }
-                });
-                
-                function updateSelection(items) {
-                    items.forEach((item, i) => {
-                        if (i === selectedIndex) {
-                            item.classList.add('bg-teal-100');
-                            item.scrollIntoView({ block: 'nearest' });
-                        } else {
-                            item.classList.remove('bg-teal-100');
-                        }
-                    });
-                }
                 
                 document.addEventListener('click', (e) => {
                     if (!cityInput.contains(e.target) && !suggestionsDiv.contains(e.target)) {
@@ -383,7 +561,7 @@
             }
 
             // =============================================
-            // АВТОКОМПЛИТ ДЛЯ БРЕНДОВ
+            // АВТОКОМПЛИТ ДЛЯ БРЕНДОВ ЛЫЖ
             // =============================================
             function initBrandAutocomplete() {
                 const brandInput = document.getElementById('skiBrandInput');
@@ -423,7 +601,7 @@
                             suggestionsDiv.innerHTML = `
                                 <div class="p-3 text-sm">
                                     <p class="text-gray-500 mb-2">Бренд не найден</p>
-                                    <button type="button" onclick="window.addCustomBrand('${query.replace(/'/g, "\\'")}')" 
+                                    <button type="button" onclick="window.addCustomSkiBrand('${query.replace(/'/g, "\\'")}')" 
                                             class="w-full bg-teal-50 text-teal-700 px-3 py-2 rounded-lg text-sm hover:bg-teal-100">
                                         + Добавить новый бренд "${query}"
                                     </button>
@@ -461,15 +639,13 @@
                 });
             }
 
-            window.addCustomBrand = async function(brandName) {
+            window.addCustomSkiBrand = async function(brandName) {
                 const { data: { user } } = await supabase.auth.getUser();
                 if (!user) { alert('Войдите в систему'); return; }
                 
-                const { data, error } = await supabase
+                const { error } = await supabase
                     .from('user_ski_brands')
-                    .insert({ user_id: user.id, name: brandName, status: 'pending' })
-                    .select()
-                    .single();
+                    .insert({ user_id: user.id, name: brandName, status: 'pending' });
                 
                 if (error) {
                     if (error.code === '23505') alert('Этот бренд уже есть в базе или ожидает модерации');
@@ -494,7 +670,7 @@
             }
 
             // =============================================
-            // АВТОКОМПЛИТ ДЛЯ МОДЕЛЕЙ
+            // АВТОКОМПЛИТ ДЛЯ МОДЕЛЕЙ ЛЫЖ
             // =============================================
             function initModelAutocomplete() {
                 const modelInput = document.getElementById('skiModelInput');
@@ -537,7 +713,7 @@
                             suggestionsDiv.innerHTML = `
                                 <div class="p-3 text-sm">
                                     <p class="text-gray-500 mb-2">Модель не найдена</p>
-                                    <button type="button" onclick="window.addCustomModel('${query.replace(/'/g, "\\'")}')" 
+                                    <button type="button" onclick="window.addCustomSkiModel('${query.replace(/'/g, "\\'")}')" 
                                             class="w-full bg-teal-50 text-teal-700 px-3 py-2 rounded-lg text-sm hover:bg-teal-100">
                                         + Добавить новую модель "${query}"
                                     </button>
@@ -574,7 +750,7 @@
                 });
             }
 
-            window.addCustomModel = async function(modelName) {
+            window.addCustomSkiModel = async function(modelName) {
                 const { data: { user } } = await supabase.auth.getUser();
                 if (!user) { alert('Войдите в систему'); return; }
                 
@@ -602,20 +778,21 @@
                 if (!user) { window.location.href = 'auth.html'; return; }
 
                 const layers = [];
-                const brands = document.querySelectorAll('.layer-brand');
-                const names = document.querySelectorAll('.layer-name');
-                const ranges = document.querySelectorAll('.layer-range');
-                const notes = document.querySelectorAll('.layer-notes');
-
+                
                 for (let i = 0; i < layerCount; i++) {
-                    if (names[i]?.value) {
+                    const brandInput = document.getElementById(`layer${i}WaxBrandInput`);
+                    const nameInput = document.getElementById(`layer${i}WaxNameInput`);
+                    const rangeInput = document.querySelector(`#layer${i}WaxNameInput ~ .layer-range`);
+                    const notesInput = document.querySelector(`#layer${i}WaxNameInput ~ .layer-notes`);
+                    
+                    if (nameInput?.value) {
                         layers.push({
                             layer_type: reportType.value === 'grip' ? ['base', 'main', 'top'][i] : `layer${i+1}`,
                             layer_order: i + 1,
-                            wax_brand: brands[i]?.value || null,
-                            wax_name: names[i].value,
-                            temp_range: ranges[i]?.value || null,
-                            notes: notes[i]?.value || null
+                            wax_brand: brandInput?.value || null,
+                            wax_name: nameInput.value,
+                            temp_range: rangeInput?.value || null,
+                            notes: notesInput?.value || null
                         });
                     }
                 }
