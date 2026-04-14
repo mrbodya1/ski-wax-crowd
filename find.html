@@ -372,40 +372,39 @@
                     .eq('report_type', filters.report_type);
 
                 // Температура: пересечение диапазонов
-                // Отчёт подходит, если его диапазон [temp_from, temp_to] пересекается с фильтром
                 query = query.or(`and(temp_from.gte.${filters.temp_from},temp_from.lte.${filters.temp_to}),and(temp_to.gte.${filters.temp_from},temp_to.lte.${filters.temp_to}),and(temp_from.lte.${filters.temp_from},temp_to.gte.${filters.temp_to})`);
-                console.log('✅ Добавлен фильтр температуры (пересечение диапазонов)');
-
+                console.log('✅ Добавлен фильтр температуры');
+                
                 // Страна
                 if (filters.country !== 'Любая') {
                     query = query.eq('country', filters.country);
                     console.log('✅ Добавлен фильтр страны:', filters.country);
                 }
-
+                
                 // Город
                 if (filters.city) {
-                    query = query.ilike('city', `%${filters.city}%`);
+                    query = query.eq('city', filters.city);
                     console.log('✅ Добавлен фильтр города:', filters.city);
                 }
-
+                
                 // Место
                 if (filters.location_name) {
-                    query = query.ilike('location_name', `%${filters.location_name}%`);
+                    query = query.eq('location_name', filters.location_name);
                     console.log('✅ Добавлен фильтр места:', filters.location_name);
                 }
-
+                
                 // Погода
                 if (filters.weather !== 'any') {
                     query = query.eq('weather', filters.weather);
                     console.log('✅ Добавлен фильтр погоды:', filters.weather);
                 }
-
+                
                 // Трасса
                 if (filters.track_condition !== 'any') {
                     query = query.eq('track_condition', filters.track_condition);
                     console.log('✅ Добавлен фильтр трассы:', filters.track_condition);
                 }
-
+                
                 // Тип снега
                 if (filters.snow_type !== 'any') {
                     query = query.eq('snow_type', filters.snow_type);
