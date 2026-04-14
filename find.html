@@ -13,14 +13,22 @@
         .precip-btn { padding: 10px; border: 1px solid #d1d5db; border-radius: 12px; text-align: center; cursor: pointer; transition: all 0.2s; }
         .precip-btn.active { border-color: #0d9488; background: #f0fdfa; }
         .precip-btn span { font-size: 24px; display: block; margin-bottom: 4px; }
+        .weather-btn {
+            padding: 10px 8px;
+            border: 1px solid #d1d5db;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 13px;
+        }
+        .weather-btn.active { border-color: #0d9488; background: #f0fdfa; }
+        .weather-btn span { font-size: 20px; display: block; margin-bottom: 2px; }
         
         #reportModal {
             display: none !important;
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0, 0, 0, 0.5);
             backdrop-filter: blur(4px);
             align-items: center;
@@ -28,11 +36,7 @@
             z-index: 50;
             padding: 16px;
         }
-        
-        #reportModal.visible {
-            display: flex !important;
-        }
-        
+        #reportModal.visible { display: flex !important; }
         .modal-content {
             background: white;
             border-radius: 16px;
@@ -42,7 +46,6 @@
             overflow-y: auto;
             padding: 24px;
         }
-        
         .result-card {
             cursor: pointer;
             transition: all 0.2s;
@@ -51,7 +54,6 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             border-color: #0d9488;
         }
-        
         .city-suggestion { transition: background-color 0.15s; }
         .city-suggestion:hover { background-color: #f0fdfa !important; }
         .city-suggestion.bg-teal-100 { background-color: #ccfbf1; }
@@ -83,30 +85,61 @@
                 <input type="hidden" id="reportType" value="glide">
 
                 <div class="space-y-4">
+                    <!-- Страна, Город, Место -->
                     <div class="grid grid-cols-3 gap-3">
                         <div>
                             <label class="block text-sm font-medium mb-1">Страна</label>
-                            <input type="text" id="country" placeholder="Россия" class="w-full border rounded-xl p-3">
+                            <select id="country" class="w-full border rounded-xl p-3">
+                                <option value="Любая" selected>🌍 Любая</option>
+                                <option value="Россия">🇷🇺 Россия</option>
+                                <option value="Финляндия">🇫🇮 Финляндия</option>
+                                <option value="Швеция">🇸🇪 Швеция</option>
+                                <option value="Норвегия">🇳🇴 Норвегия</option>
+                                <option value="Эстония">🇪🇪 Эстония</option>
+                                <option value="Казахстан">🇰🇿 Казахстан</option>
+                                <option value="Беларусь">🇧🇾 Беларусь</option>
+                            </select>
                         </div>
                         <div class="relative">
                             <label class="block text-sm font-medium mb-1">Город</label>
-                            <input type="text" id="cityInput" placeholder="Начните вводить..." class="w-full border rounded-xl p-3" autocomplete="off">
+                            <input type="text" id="cityInput" placeholder="Любой" class="w-full border rounded-xl p-3" autocomplete="off">
                             <input type="hidden" id="cityId">
-                            <input type="hidden" id="cityRegion">
                             <div id="citySuggestions" class="absolute z-50 w-full bg-white border rounded-xl shadow-lg mt-1 hidden max-h-60 overflow-y-auto"></div>
                         </div>
                         <div>
                             <label class="block text-sm font-medium mb-1">Место</label>
-                            <input type="text" id="locationName" placeholder="Лужники" class="w-full border rounded-xl p-3">
+                            <input type="text" id="locationName" placeholder="Любое" class="w-full border rounded-xl p-3">
                         </div>
                     </div>
 
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Температура воздуха: <span id="airTempValue">-5</span>°C</label>
-                        <input type="range" id="airTemp" min="-30" max="15" value="-5" step="1" class="w-full">
-                        <div class="slider-label"><span>-30°C</span><span>0°C</span><span>+15°C</span></div>
+                    <!-- Температура от/до -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Темп. от: <span id="tempFromValue">-10</span>°C</label>
+                            <input type="range" id="tempFrom" min="-30" max="15" value="-10" step="1" class="w-full">
+                            <div class="slider-label"><span>-30°C</span><span>0°C</span><span>+15°C</span></div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Темп. до: <span id="tempToValue">0</span>°C</label>
+                            <input type="range" id="tempTo" min="-30" max="15" value="0" step="1" class="w-full">
+                            <div class="slider-label"><span>-30°C</span><span>0°C</span><span>+15°C</span></div>
+                        </div>
                     </div>
 
+                    <!-- Погода -->
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Погода</label>
+                        <div class="grid grid-cols-5 gap-2" id="weatherGroup">
+                            <div class="weather-btn" data-weather="any">🌍 Любая</div>
+                            <div class="weather-btn active" data-weather="sunny"><span>☀️</span>Солнечно</div>
+                            <div class="weather-btn" data-weather="cloudy"><span>⛅</span>Облачно</div>
+                            <div class="weather-btn" data-weather="overcast"><span>☁️</span>Пасмурно</div>
+                            <div class="weather-btn" data-weather="snow"><span>🌨️</span>Снегопад</div>
+                        </div>
+                        <input type="hidden" id="weather" value="sunny">
+                    </div>
+
+                    <!-- Осадки -->
                     <div>
                         <label class="block text-sm font-medium mb-2">Осадки</label>
                         <div class="grid grid-cols-4 gap-2" id="precipTypeGroup">
@@ -125,6 +158,7 @@
                     </div>
                 </div>
 
+                <!-- Спойлер Дополнительно -->
                 <div class="mt-4">
                     <button type="button" id="toggleDetails" class="text-teal-600 text-sm font-medium">▶ ⚙️ Дополнительно</button>
                 </div>
@@ -137,19 +171,30 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium mb-1">Состояние трассы: <span id="trackValue">Жесткая</span></label>
-                        <input type="range" id="trackCondition" min="1" max="7" value="3" step="1" class="w-full">
-                        <div class="slider-label">
-                            <span>Лёд</span><span>Оч.жест</span><span>Жесткая</span><span>Отличная</span><span>Разбитая</span><span>Мягкая</span><span>Оч.мяг</span>
-                        </div>
+                        <label class="block text-sm font-medium mb-1">Состояние трассы: <span id="trackValue">Любое</span></label>
+                        <select id="trackCondition" class="w-full border rounded-xl p-3">
+                            <option value="any" selected>Любое</option>
+                            <option value="Лёд">Лёд</option>
+                            <option value="Очень жесткая">Очень жесткая</option>
+                            <option value="Жесткая">Жесткая</option>
+                            <option value="Отличная">Отличная</option>
+                            <option value="Разбитая">Разбитая</option>
+                            <option value="Мягкая">Мягкая</option>
+                            <option value="Очень мягкая">Очень мягкая</option>
+                        </select>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium mb-1">Тип снега: <span id="snowTypeValue">Мелкозернистый</span></label>
-                        <input type="range" id="snowType" min="1" max="6" value="2" step="1" class="w-full">
-                        <div class="slider-label">
-                            <span>Свежий</span><span>Мелкозерн</span><span>Старый</span><span>Мокрый</span><span>Подмерз</span><span>Искусств</span>
-                        </div>
+                        <label class="block text-sm font-medium mb-1">Тип снега: <span id="snowTypeValue">Любой</span></label>
+                        <select id="snowType" class="w-full border rounded-xl p-3">
+                            <option value="any" selected>Любой</option>
+                            <option value="Свежевыпавший">Свежевыпавший</option>
+                            <option value="Мелкозернистый">Мелкозернистый</option>
+                            <option value="Старый">Старый</option>
+                            <option value="Мокрый">Мокрый</option>
+                            <option value="Подмерзший зернистый">Подмерзший зернистый</option>
+                            <option value="Искусственный">Искусственный</option>
+                        </select>
                     </div>
                 </div>
 
@@ -162,7 +207,7 @@
         </div>
     </main>
 
-    <!-- Модальное окно для деталей отчёта -->
+    <!-- Модальное окно -->
     <div id="reportModal">
         <div class="modal-content">
             <div class="flex justify-between items-start mb-4">
@@ -180,209 +225,111 @@
             const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
             let currentUser = null;
-            const trackConditions = ['Лёд', 'Очень жесткая', 'Жесткая', 'Отличная', 'Разбитая', 'Мягкая', 'Очень мягкая'];
-            const snowTypes = ['Свежевыпавший', 'Мелкозернистый', 'Старый', 'Мокрый', 'Подмерзший зернистый', 'Искусственный'];
             const intensityNames = ['Слабые', 'Средние', 'Сильные'];
+            
+            const weatherIcons = {
+                'sunny': '☀️', 'cloudy': '⛅', 'overcast': '☁️', 'snow': '🌨️'
+            };
 
-            // Проверка авторизации
             async function init() {
                 const { data: { user } } = await supabase.auth.getUser();
-                if (!user) {
-                    window.location.href = 'auth.html';
-                    return;
-                }
+                if (!user) { window.location.href = 'auth.html'; return; }
                 currentUser = user;
             }
 
-            // Выход
             window.logout = async () => {
                 await supabase.auth.signOut();
                 window.location.href = 'index.html';
             };
 
-            // =============================================
-            // АВТОКОМПЛИТ ДЛЯ ГОРОДОВ (T9)
-            // =============================================
+            // Автокомплит городов
             function initCityAutocomplete() {
                 const cityInput = document.getElementById('cityInput');
                 const suggestionsDiv = document.getElementById('citySuggestions');
-                
                 let debounceTimer;
-                let selectedIndex = -1;
-                let currentSuggestions = [];
                 
                 cityInput.addEventListener('input', async (e) => {
                     clearTimeout(debounceTimer);
                     const query = e.target.value.trim();
-                    
-                    if (query.length < 2) {
-                        suggestionsDiv.classList.add('hidden');
-                        currentSuggestions = [];
-                        return;
-                    }
+                    if (query.length < 2) { suggestionsDiv.classList.add('hidden'); return; }
                     
                     debounceTimer = setTimeout(async () => {
-                        try {
-                            const { data: cities, error } = await supabase
-                                .from('cities')
-                                .select('id, name, region_name, population, label')
-                                .ilike('name', `${query}%`)
-                                .order('population', { ascending: false })
-                                .limit(8);
-                            
-                            if (error) throw error;
-                            
-                            currentSuggestions = cities || [];
-                            renderSuggestions(currentSuggestions);
-                            
-                        } catch (err) {
-                            console.error('Ошибка поиска городов:', err);
+                        const { data: cities } = await supabase
+                            .from('cities')
+                            .select('id, name, region_name, population, label')
+                            .ilike('name', `${query}%`)
+                            .order('population', { ascending: false })
+                            .limit(8);
+                        
+                        if (!cities || cities.length === 0) {
+                            suggestionsDiv.innerHTML = '<div class="px-4 py-2 text-gray-500">Город не найден</div>';
+                            suggestionsDiv.classList.remove('hidden'); return;
                         }
+                        
+                        suggestionsDiv.innerHTML = cities.map(city => `
+                            <div class="city-suggestion px-4 py-2 hover:bg-teal-50 cursor-pointer border-b last:border-0 flex justify-between items-center" 
+                                 data-id="${city.id}" data-name="${city.name}" data-label="${city.label}">
+                                <span><span class="font-medium">${city.name}</span><span class="text-sm text-gray-500 ml-2">${city.region_name}</span></span>
+                            </div>
+                        `).join('');
+                        suggestionsDiv.classList.remove('hidden');
+                        
+                        document.querySelectorAll('#citySuggestions .city-suggestion').forEach(el => {
+                            el.addEventListener('click', () => {
+                                cityInput.value = el.dataset.label || el.dataset.name;
+                                document.getElementById('cityId').value = el.dataset.id;
+                                suggestionsDiv.classList.add('hidden');
+                            });
+                        });
                     }, 300);
                 });
-                
-                function renderSuggestions(cities) {
-                    if (!cities || cities.length === 0) {
-                        performFuzzySearch(cityInput.value.trim());
-                        return;
-                    }
-                    
-                    suggestionsDiv.innerHTML = cities.map((city, index) => `
-                        <div class="city-suggestion px-4 py-2 hover:bg-teal-50 cursor-pointer border-b last:border-0 flex justify-between items-center" 
-                             data-index="${index}"
-                             data-id="${city.id}"
-                             data-name="${city.name}"
-                             data-region="${city.region_name}"
-                             data-label="${city.label}">
-                            <span>
-                                <span class="font-medium">${city.name}</span>
-                                <span class="text-sm text-gray-500 ml-2">${city.region_name}</span>
-                            </span>
-                            <span class="text-xs text-gray-400">${city.population ? Math.round(city.population / 1000) + 'k' : ''}</span>
-                        </div>
-                    `).join('');
-                    
-                    suggestionsDiv.classList.remove('hidden');
-                    selectedIndex = -1;
-                    
-                    document.querySelectorAll('.city-suggestion').forEach(el => {
-                        el.addEventListener('click', () => {
-                            selectCity(el.dataset);
-                        });
-                    });
-                }
-                
-                async function performFuzzySearch(query) {
-                    if (query.length < 3) {
-                        suggestionsDiv.innerHTML = '<div class="px-4 py-2 text-gray-500">Введите ещё пару букв...</div>';
-                        suggestionsDiv.classList.remove('hidden');
-                        return;
-                    }
-                    
-                    const { data: cities } = await supabase
-                        .from('cities')
-                        .select('id, name, region_name, population, label')
-                        .ilike('name', `%${query}%`)
-                        .order('population', { ascending: false })
-                        .limit(8);
-                    
-                    if (!cities || cities.length === 0) {
-                        suggestionsDiv.innerHTML = '<div class="px-4 py-2 text-gray-500">Город не найден</div>';
-                        suggestionsDiv.classList.remove('hidden');
-                        return;
-                    }
-                    
-                    currentSuggestions = cities;
-                    renderSuggestions(cities);
-                }
-                
-                function selectCity(data) {
-                    cityInput.value = data.label || `${data.name} (${data.region})`;
-                    document.getElementById('cityId').value = data.id;
-                    document.getElementById('cityRegion').value = data.region;
-                    suggestionsDiv.classList.add('hidden');
-                }
-                
-                cityInput.addEventListener('keydown', (e) => {
-                    const items = document.querySelectorAll('.city-suggestion');
-                    
-                    if (e.key === 'ArrowDown') {
-                        e.preventDefault();
-                        selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
-                        updateSelection(items);
-                    } else if (e.key === 'ArrowUp') {
-                        e.preventDefault();
-                        selectedIndex = Math.max(selectedIndex - 1, 0);
-                        updateSelection(items);
-                    } else if (e.key === 'Enter' && selectedIndex >= 0) {
-                        e.preventDefault();
-                        const selected = items[selectedIndex];
-                        if (selected) selectCity(selected.dataset);
-                    } else if (e.key === 'Escape') {
-                        suggestionsDiv.classList.add('hidden');
-                    }
-                });
-                
-                function updateSelection(items) {
-                    items.forEach((item, i) => {
-                        if (i === selectedIndex) {
-                            item.classList.add('bg-teal-100');
-                            item.scrollIntoView({ block: 'nearest' });
-                        } else {
-                            item.classList.remove('bg-teal-100');
-                        }
-                    });
-                }
                 
                 document.addEventListener('click', (e) => {
                     if (!cityInput.contains(e.target) && !suggestionsDiv.contains(e.target)) {
                         suggestionsDiv.classList.add('hidden');
                     }
                 });
-                
-                cityInput.addEventListener('focus', () => {
-                    if (cityInput.value.length >= 2 && currentSuggestions.length > 0) {
-                        suggestionsDiv.classList.remove('hidden');
-                    }
-                });
             }
 
             // Вкладки
-            const tabGlide = document.getElementById('tabGlide');
-            const tabGrip = document.getElementById('tabGrip');
-            const reportType = document.getElementById('reportType');
-
-            tabGlide.addEventListener('click', () => {
-                tabGlide.classList.add('active'); 
-                tabGrip.classList.remove('active');
-                reportType.value = 'glide';
+            document.getElementById('tabGlide').addEventListener('click', () => {
+                document.getElementById('tabGlide').classList.add('active');
+                document.getElementById('tabGrip').classList.remove('active');
+                document.getElementById('reportType').value = 'glide';
             });
-            
-            tabGrip.addEventListener('click', () => {
-                tabGrip.classList.add('active'); 
-                tabGlide.classList.remove('active');
-                reportType.value = 'grip';
+            document.getElementById('tabGrip').addEventListener('click', () => {
+                document.getElementById('tabGrip').classList.add('active');
+                document.getElementById('tabGlide').classList.remove('active');
+                document.getElementById('reportType').value = 'grip';
             });
 
-            // Слайдеры
-            const airTemp = document.getElementById('airTemp');
-            airTemp.addEventListener('input', () => {
-                document.getElementById('airTempValue').textContent = airTemp.value;
+            // Слайдеры температуры
+            const tempFrom = document.getElementById('tempFrom');
+            const tempTo = document.getElementById('tempTo');
+            document.getElementById('tempFrom').addEventListener('input', () => {
+                document.getElementById('tempFromValue').textContent = tempFrom.value;
+                if (parseInt(tempFrom.value) > parseInt(tempTo.value)) {
+                    tempTo.value = tempFrom.value;
+                    document.getElementById('tempToValue').textContent = tempFrom.value;
+                }
+            });
+            document.getElementById('tempTo').addEventListener('input', () => {
+                document.getElementById('tempToValue').textContent = tempTo.value;
+                if (parseInt(tempTo.value) < parseInt(tempFrom.value)) {
+                    tempFrom.value = tempTo.value;
+                    document.getElementById('tempFromValue').textContent = tempTo.value;
+                }
             });
 
-            const trackSlider = document.getElementById('trackCondition');
-            trackSlider.addEventListener('input', () => {
-                document.getElementById('trackValue').textContent = trackConditions[trackSlider.value - 1];
-            });
-
-            const snowSlider = document.getElementById('snowType');
-            snowSlider.addEventListener('input', () => {
-                document.getElementById('snowTypeValue').textContent = snowTypes[snowSlider.value - 1];
-            });
-
-            const intensitySlider = document.getElementById('intensity');
-            intensitySlider.addEventListener('input', () => {
-                document.getElementById('intensityValue').textContent = intensityNames[intensitySlider.value - 1];
+            // Погода
+            const weatherBtns = document.querySelectorAll('.weather-btn');
+            const weatherInput = document.getElementById('weather');
+            weatherBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    weatherBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    weatherInput.value = btn.dataset.weather;
+                });
             });
 
             // Спойлер
@@ -396,15 +343,18 @@
             const precipBtns = document.querySelectorAll('.precip-btn');
             const precipTypeInput = document.getElementById('precipitationType');
             const intensityGroup = document.getElementById('intensityGroup');
-
             precipBtns.forEach(btn => {
                 btn.addEventListener('click', () => {
                     precipBtns.forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
-                    const type = btn.dataset.type;
-                    precipTypeInput.value = type;
-                    intensityGroup.classList.toggle('hidden', type === 'none');
+                    precipTypeInput.value = btn.dataset.type;
+                    intensityGroup.classList.toggle('hidden', btn.dataset.type === 'none');
                 });
+            });
+
+            const intensitySlider = document.getElementById('intensity');
+            intensitySlider.addEventListener('input', () => {
+                document.getElementById('intensityValue').textContent = intensityNames[intensitySlider.value - 1];
             });
 
             // Поиск
@@ -412,34 +362,39 @@
                 e.preventDefault();
                 
                 const filters = {
-                    report_type: reportType.value,
-                    air_temp: parseInt(airTemp.value),
+                    report_type: document.getElementById('reportType').value,
+                    country: document.getElementById('country').value,
+                    city: document.getElementById('cityInput').value,
+                    location_name: document.getElementById('locationName').value,
+                    temp_from: parseInt(tempFrom.value),
+                    temp_to: parseInt(tempTo.value),
+                    weather: weatherInput.value,
                     precipitation_type: precipTypeInput.value,
-                    precipitation_intensity: precipTypeInput.value !== 'none' ? intensityNames[intensitySlider.value - 1] : null,
-                    track_condition: trackConditions[trackSlider.value - 1],
-                    snow_type: snowTypes[snowSlider.value - 1]
+                    track_condition: document.getElementById('trackCondition').value,
+                    snow_type: document.getElementById('snowType').value
                 };
 
                 let query = supabase
                     .from('reports')
                     .select(`
                         id, user_id, start_date, country, city, location_name,
-                        air_temp, track_condition, snow_type, comment,
+                        temp_from, temp_to, weather, track_condition, snow_type, comment,
                         snowflakes_total, snowflakes_count,
                         ski_brand, ski_model, ski_base, ski_structure,
                         wax_layers(wax_brand, wax_name, temp_range, notes)
                     `)
                     .eq('report_type', filters.report_type)
-                    .gte('air_temp', filters.air_temp - 5)
-                    .lte('air_temp', filters.air_temp + 5)
-                    .limit(10);
+                    .gte('temp_from', filters.temp_from - 3)
+                    .lte('temp_to', filters.temp_to + 3)
+                    .limit(15);
 
-                if (filters.precipitation_type !== 'none') {
-                    query = query.eq('precipitation_type', filters.precipitation_type);
-                }
+                if (filters.country !== 'Любая') query = query.eq('country', filters.country);
+                if (filters.city) query = query.ilike('city', `%${filters.city}%`);
+                if (filters.weather !== 'any') query = query.eq('weather', filters.weather);
+                if (filters.track_condition !== 'any') query = query.eq('track_condition', filters.track_condition);
+                if (filters.snow_type !== 'any') query = query.eq('snow_type', filters.snow_type);
 
                 const { data: reports, error } = await query;
-
                 if (error || !reports?.length) {
                     document.getElementById('results').innerHTML = '<p class="text-gray-500 text-center py-8">Отчёты не найдены</p>';
                     return;
@@ -450,7 +405,6 @@
                     .from('profiles')
                     .select('id, username, full_name, user_rating')
                     .in('id', userIds);
-
                 const profilesMap = {};
                 profiles?.forEach(p => { profilesMap[p.id] = p; });
 
@@ -460,13 +414,12 @@
                     return scoreB - scoreA;
                 });
 
-                renderResults(sorted.slice(0, 3), profilesMap);
+                renderResults(sorted.slice(0, 5), profilesMap);
             });
 
             function renderResults(reports, profilesMap) {
                 const container = document.getElementById('results');
-                
-                if (!reports || reports.length === 0) {
+                if (!reports.length) {
                     container.innerHTML = '<p class="text-gray-500 text-center py-8">Отчёты не найдены</p>';
                     return;
                 }
@@ -476,12 +429,13 @@
                     const author = profilesMap[r.user_id]?.full_name || profilesMap[r.user_id]?.username || 'Аноним';
                     const authorRating = profilesMap[r.user_id]?.user_rating?.toFixed(1) || '—';
                     const waxes = r.wax_layers?.map(l => l.wax_name).join(' + ') || '—';
+                    const weatherIcon = weatherIcons[r.weather] || '';
 
                     return `
                         <div class="result-card border rounded-xl p-4 bg-white" data-report-id="${r.id}">
                             <div class="flex justify-between items-start mb-2">
                                 <div>
-                                    <span class="font-medium">${r.country || '—'}, ${r.city || '—'} — ${r.location_name || '—'}</span>
+                                    <span class="font-medium">${r.country}, ${r.city} — ${r.location_name}</span>
                                     <span class="text-sm text-gray-500 ml-2">${new Date(r.start_date).toLocaleDateString('ru-RU')}</span>
                                 </div>
                                 <div class="flex items-center gap-2">
@@ -489,15 +443,15 @@
                                 </div>
                             </div>
                             <div class="grid grid-cols-3 gap-2 text-sm mb-2">
-                                <div><span class="text-gray-500">Темп:</span> ${r.air_temp}°C</div>
+                                <div><span class="text-gray-500">Темп:</span> ${r.temp_from}…${r.temp_to}°C</div>
+                                <div><span class="text-gray-500">Погода:</span> ${weatherIcon} ${r.weather ? {sunny:'Солнечно',cloudy:'Облачно',overcast:'Пасмурно',snow:'Снегопад'}[r.weather] : '—'}</div>
                                 <div><span class="text-gray-500">Трасса:</span> ${r.track_condition || '—'}</div>
-                                <div><span class="text-gray-500">Снег:</span> ${r.snow_type || '—'}</div>
                             </div>
                             <div class="text-sm mb-2">
                                 <span class="text-gray-500">🧴 Смазка:</span> ${waxes}
                             </div>
                             <div class="flex justify-between text-sm text-gray-500">
-                                <span>👤 ${author} (рейтинг: ${authorRating})</span>
+                                <span>👤 ${author} (${authorRating})</span>
                                 <span>${r.snowflakes_count || 0} оценок</span>
                             </div>
                         </div>
@@ -506,38 +460,19 @@
                 
                 document.querySelectorAll('[data-report-id]').forEach(card => {
                     card.addEventListener('click', function() {
-                        const reportId = this.dataset.reportId;
-                        showReportDetail(reportId);
+                        showReportDetail(this.dataset.reportId);
                     });
                 });
             }
 
-            // Показ деталей отчёта
             window.showReportDetail = async function(reportId) {
-                console.log('🖱️ Клик по отчёту:', reportId);
-                
-                const { data: report, error } = await supabase
+                const { data: report } = await supabase
                     .from('reports')
-                    .select(`
-                        id, user_id, report_type, start_date, country, city, location_name,
-                        air_temp, track_condition, snow_type, comment,
-                        snowflakes_total, snowflakes_count,
-                        ski_brand, ski_model, ski_base, ski_structure,
-                        wax_layers(id, wax_brand, wax_name, temp_range, notes)
-                    `)
+                    .select(`*, wax_layers(*), profiles:user_id(username, full_name)`)
                     .eq('id', reportId)
                     .single();
 
-                if (error || !report) {
-                    console.error('Ошибка загрузки отчёта:', error);
-                    return;
-                }
-
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('username, full_name')
-                    .eq('id', report.user_id)
-                    .single();
+                if (!report) return;
 
                 if (currentUser) {
                     const { data: existing } = await supabase
@@ -549,10 +484,8 @@
                     
                     if (!existing) {
                         await supabase.from('view_history').insert({
-                            user_id: currentUser.id,
-                            report_id: reportId,
-                            viewed_at: new Date().toISOString(),
-                            rated: false
+                            user_id: currentUser.id, report_id: reportId,
+                            viewed_at: new Date().toISOString(), rated: false
                         });
                     } else {
                         await supabase.from('view_history')
@@ -561,21 +494,21 @@
                     }
                 }
 
-                const author = profile?.full_name || profile?.username || 'Аноним';
+                const author = report.profiles?.full_name || report.profiles?.username || 'Аноним';
                 const avg = report.snowflakes_count > 0 ? (report.snowflakes_total / report.snowflakes_count).toFixed(1) : '—';
+                const weatherIcon = weatherIcons[report.weather] || '';
 
                 document.getElementById('modalTitle').textContent = `${report.country}, ${report.city} — ${report.location_name}`;
                 document.getElementById('modalContent').innerHTML = `
                     <div class="space-y-4">
                         <div class="grid grid-cols-2 gap-2 text-sm">
                             <div><span class="text-gray-500">Дата:</span> ${new Date(report.start_date).toLocaleDateString('ru-RU')}</div>
-                            <div><span class="text-gray-500">Температура:</span> ${report.air_temp}°C</div>
+                            <div><span class="text-gray-500">Температура:</span> ${report.temp_from}…${report.temp_to}°C</div>
+                            <div><span class="text-gray-500">Погода:</span> ${weatherIcon} ${report.weather ? {sunny:'Солнечно',cloudy:'Облачно',overcast:'Пасмурно',snow:'Снегопад'}[report.weather] : '—'}</div>
                             <div><span class="text-gray-500">Трасса:</span> ${report.track_condition}</div>
                             <div><span class="text-gray-500">Снег:</span> ${report.snow_type || '—'}</div>
                         </div>
-                        <div>
-                            <span class="text-gray-500">Лыжи:</span> ${report.ski_brand || '—'} ${report.ski_model || ''} • ${report.ski_base || '—'} • ${report.ski_structure || '—'}
-                        </div>
+                        <div><span class="text-gray-500">Лыжи:</span> ${report.ski_brand || '—'} ${report.ski_model || ''} • ${report.ski_base || '—'} • ${report.ski_structure || '—'}</div>
                         <div>
                             <span class="text-gray-500">Слои смазки:</span>
                             ${report.wax_layers?.map(l => `
@@ -590,25 +523,18 @@
                     </div>
                 `;
 
-                const modal = document.getElementById('reportModal');
-                modal.classList.add('visible');
+                document.getElementById('reportModal').classList.add('visible');
             };
 
             window.closeModal = function() {
-                const modal = document.getElementById('reportModal');
-                modal.classList.remove('visible');
+                document.getElementById('reportModal').classList.remove('visible');
             };
 
             document.getElementById('reportModal').addEventListener('click', function(e) {
-                if (e.target === this) {
-                    closeModal();
-                }
+                if (e.target === this) closeModal();
             });
 
-            // Инициализация
-            init().then(() => {
-                initCityAutocomplete();
-            });
+            init().then(() => { initCityAutocomplete(); });
         })();
     </script>
 </body>
