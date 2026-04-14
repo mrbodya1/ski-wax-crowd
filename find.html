@@ -3,27 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Подбор смазки | Waxsense</title>
+    <title>Подбор смазки | WaxCrowd</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .tab-btn { padding: 12px 24px; font-weight: 500; border-bottom: 2px solid transparent; transition: all 0.2s; }
         .tab-btn.active { color: #0d9488; border-bottom-color: #0d9488; }
-        .slider-label { display: flex; justify-content: space-between; margin-top: 4px; font-size: 12px; color: #6b7280; }
+        .slider-label { display: flex; justify-content: space-between; margin-top: 4px; font-size: 13px; color: #6b7280; }
         .precip-btn { padding: 10px; border: 1px solid #d1d5db; border-radius: 12px; text-align: center; cursor: pointer; transition: all 0.2s; }
         .precip-btn.active { border-color: #0d9488; background: #f0fdfa; }
         .precip-btn span { font-size: 24px; display: block; margin-bottom: 4px; }
-        .weather-btn {
-            padding: 10px 8px;
-            border: 1px solid #d1d5db;
-            border-radius: 12px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-size: 13px;
-        }
-        .weather-btn.active { border-color: #0d9488; background: #f0fdfa; }
-        .weather-btn span { font-size: 20px; display: block; margin-bottom: 2px; }
         
         #reportModal {
             display: none !important;
@@ -49,6 +38,7 @@
         .result-card {
             cursor: pointer;
             transition: all 0.2s;
+            border: 1px solid #e5e7eb;
         }
         .result-card:hover {
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -62,7 +52,7 @@
 <body class="bg-gray-50 min-h-screen">
     <nav class="bg-white border-b">
         <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
-            <a href="index.html" class="text-2xl font-bold text-teal-600">❄️ Waxsense</a>
+            <a href="index.html" class="text-2xl font-bold text-teal-600">❄️ WaxCrowd</a>
             <div class="flex gap-4">
                 <a href="index.html" class="text-gray-600">Главная</a>
                 <a href="profile.html" class="text-gray-600">Профиль</a>
@@ -126,15 +116,34 @@
                         </div>
                     </div>
 
-                    <!-- Погода -->
+                    <!-- Погода (слайдер) -->
                     <div>
-                        <label class="block text-sm font-medium mb-1">Погода: <span id="weatherValue">☀️ Солнечно</span></label>
+                        <label class="block text-sm font-medium mb-1">Погода: <span id="weatherValue">🌍 Любая</span></label>
                         <input type="range" id="weatherSlider" min="0" max="7" value="0" step="1" class="w-full">
                         <div class="slider-label">
                             <span>🌍</span><span>☀️</span><span>⛅</span><span>☁️</span><span>🌨️</span><span>❄️</span><span>🌧️</span><span>🌨️</span>
                         </div>
                         <input type="hidden" id="weather" value="any">
                     </div>
+
+                    <!-- Осадки -->
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Осадки</label>
+                        <div class="grid grid-cols-4 gap-2" id="precipTypeGroup">
+                            <div class="precip-btn active" data-type="none"><span>☀️</span>Без осадков</div>
+                            <div class="precip-btn" data-type="snow"><span>❄️</span>Снег</div>
+                            <div class="precip-btn" data-type="rain"><span>🌧️</span>Дождь</div>
+                            <div class="precip-btn" data-type="mixed"><span>🌨️</span>Смешанные</div>
+                        </div>
+                        <input type="hidden" id="precipitationType" value="none">
+                        
+                        <div id="intensityGroup" class="mt-3 hidden">
+                            <label class="block text-sm font-medium mb-1">Интенсивность: <span id="intensityValue">Средние</span></label>
+                            <input type="range" id="intensity" min="1" max="3" value="2" step="1" class="w-full">
+                            <div class="slider-label"><span>Слабые</span><span>Средние</span><span>Сильные</span></div>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Спойлер Дополнительно -->
                 <div class="mt-4">
@@ -205,26 +214,14 @@
             let currentUser = null;
             const intensityNames = ['Слабые', 'Средние', 'Сильные'];
             
-            const weatherSlider = document.getElementById('weatherSlider');
-            const weatherValue = document.getElementById('weatherValue');
-            const weatherInput = document.getElementById('weather');
-            
-            const weatherOptions = [
-                { value: 'any', label: '🌍 Любая' },
-                { value: 'sunny', label: '☀️ Солнечно' },
-                { value: 'cloudy', label: '⛅ Облачно' },
-                { value: 'overcast', label: '☁️ Пасмурно' },
-                { value: 'light_snow', label: '🌨️ Слабый снег' },
-                { value: 'heavy_snow', label: '❄️ Сильный снег' },
-                { value: 'rain', label: '🌧️ Дождь' },
-                { value: 'sleet', label: '🌨️ Снег с дождём' }
-            ];
-            
-            weatherSlider.addEventListener('input', () => {
-                const idx = weatherSlider.value;
-                weatherValue.textContent = weatherOptions[idx].label;
-                weatherInput.value = weatherOptions[idx].value;
-            });
+            const weatherIcons = {
+                'sunny': '☀️', 'cloudy': '⛅', 'overcast': '☁️',
+                'light_snow': '🌨️', 'heavy_snow': '❄️', 'rain': '🌧️', 'sleet': '🌨️'
+            };
+            const weatherNames = {
+                'sunny': 'Солнечно', 'cloudy': 'Облачно', 'overcast': 'Пасмурно',
+                'light_snow': 'Слабый снег', 'heavy_snow': 'Сильный снег', 'rain': 'Дождь', 'sleet': 'Снег с дождём'
+            };
 
             async function init() {
                 const { data: { user } } = await supabase.auth.getUser();
@@ -316,15 +313,24 @@
                 }
             });
 
-            // Погода
-            const weatherBtns = document.querySelectorAll('.weather-btn');
+            // Слайдер погоды
+            const weatherSlider = document.getElementById('weatherSlider');
+            const weatherValue = document.getElementById('weatherValue');
             const weatherInput = document.getElementById('weather');
-            weatherBtns.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    weatherBtns.forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    weatherInput.value = btn.dataset.weather;
-                });
+            const weatherOptions = [
+                { value: 'any', label: '🌍 Любая' },
+                { value: 'sunny', label: '☀️ Солнечно' },
+                { value: 'cloudy', label: '⛅ Облачно' },
+                { value: 'overcast', label: '☁️ Пасмурно' },
+                { value: 'light_snow', label: '🌨️ Слабый снег' },
+                { value: 'heavy_snow', label: '❄️ Сильный снег' },
+                { value: 'rain', label: '🌧️ Дождь' },
+                { value: 'sleet', label: '🌨️ Снег с дождём' }
+            ];
+            weatherSlider.addEventListener('input', () => {
+                const idx = weatherSlider.value;
+                weatherValue.textContent = weatherOptions[idx].label;
+                weatherInput.value = weatherOptions[idx].value;
             });
 
             // Спойлер
@@ -332,6 +338,19 @@
                 const section = document.getElementById('detailsSection');
                 section.classList.toggle('hidden');
                 this.textContent = section.classList.contains('hidden') ? '▶ ⚙️ Дополнительно' : '▼ ⚙️ Дополнительно';
+            });
+
+            // Осадки
+            const precipBtns = document.querySelectorAll('.precip-btn');
+            const precipTypeInput = document.getElementById('precipitationType');
+            const intensityGroup = document.getElementById('intensityGroup');
+            precipBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    precipBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    precipTypeInput.value = btn.dataset.type;
+                    intensityGroup.classList.toggle('hidden', btn.dataset.type === 'none');
+                });
             });
 
             const intensitySlider = document.getElementById('intensity');
@@ -412,6 +431,7 @@
                     const authorRating = profilesMap[r.user_id]?.user_rating?.toFixed(1) || '—';
                     const waxes = r.wax_layers?.map(l => l.wax_name).join(' + ') || '—';
                     const weatherIcon = weatherIcons[r.weather] || '';
+                    const weatherName = weatherNames[r.weather] || '';
 
                     return `
                         <div class="result-card border rounded-xl p-4 bg-white" data-report-id="${r.id}">
@@ -426,7 +446,7 @@
                             </div>
                             <div class="grid grid-cols-3 gap-2 text-sm mb-2">
                                 <div><span class="text-gray-500">Темп:</span> ${r.temp_from}…${r.temp_to}°C</div>
-                                <div><span class="text-gray-500">Погода:</span> ${weatherIcon} ${r.weather ? {sunny:'Солнечно',cloudy:'Облачно',overcast:'Пасмурно',snow:'Снегопад'}[r.weather] : '—'}</div>
+                                <div><span class="text-gray-500">Погода:</span> ${weatherIcon} ${weatherName}</div>
                                 <div><span class="text-gray-500">Трасса:</span> ${r.track_condition || '—'}</div>
                             </div>
                             <div class="text-sm mb-2">
@@ -479,6 +499,7 @@
                 const author = report.profiles?.full_name || report.profiles?.username || 'Аноним';
                 const avg = report.snowflakes_count > 0 ? (report.snowflakes_total / report.snowflakes_count).toFixed(1) : '—';
                 const weatherIcon = weatherIcons[report.weather] || '';
+                const weatherName = weatherNames[report.weather] || '';
 
                 document.getElementById('modalTitle').textContent = `${report.country}, ${report.city} — ${report.location_name}`;
                 document.getElementById('modalContent').innerHTML = `
@@ -486,7 +507,7 @@
                         <div class="grid grid-cols-2 gap-2 text-sm">
                             <div><span class="text-gray-500">Дата:</span> ${new Date(report.start_date).toLocaleDateString('ru-RU')}</div>
                             <div><span class="text-gray-500">Температура:</span> ${report.temp_from}…${report.temp_to}°C</div>
-                            <div><span class="text-gray-500">Погода:</span> ${weatherIcon} ${report.weather ? {sunny:'Солнечно',cloudy:'Облачно',overcast:'Пасмурно',snow:'Снегопад'}[report.weather] : '—'}</div>
+                            <div><span class="text-gray-500">Погода:</span> ${weatherIcon} ${weatherName}</div>
                             <div><span class="text-gray-500">Трасса:</span> ${report.track_condition}</div>
                             <div><span class="text-gray-500">Снег:</span> ${report.snow_type || '—'}</div>
                         </div>
