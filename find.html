@@ -128,18 +128,12 @@
 
                     <!-- Погода -->
                     <div>
-                        <label class="block text-sm font-medium mb-2">Погода</label>
-                        <div class="grid grid-cols-4 gap-2" id="weatherGroup">
-                            <div class="weather-btn" data-weather="any">🌍 Любая</div>
-                            <div class="weather-btn active" data-weather="sunny"><span>☀️</span>Солнечно</div>
-                            <div class="weather-btn" data-weather="cloudy"><span>⛅</span>Облачно</div>
-                            <div class="weather-btn" data-weather="overcast"><span>☁️</span>Пасмурно</div>
-                            <div class="weather-btn" data-weather="light_snow"><span>🌨️</span>Слабый снег</div>
-                            <div class="weather-btn" data-weather="heavy_snow"><span>❄️❄️</span>Сильный снег</div>
-                            <div class="weather-btn" data-weather="rain"><span>🌧️</span>Дождь</div>
-                            <div class="weather-btn" data-weather="sleet"><span>🌨️🌧️</span>Снег с дождём</div>
+                        <label class="block text-sm font-medium mb-1">Погода: <span id="weatherValue">☀️ Солнечно</span></label>
+                        <input type="range" id="weatherSlider" min="0" max="7" value="0" step="1" class="w-full">
+                        <div class="slider-label">
+                            <span>🌍</span><span>☀️</span><span>⛅</span><span>☁️</span><span>🌨️</span><span>❄️</span><span>🌧️</span><span>🌨️</span>
                         </div>
-                        <input type="hidden" id="weather" value="sunny">
+                        <input type="hidden" id="weather" value="any">
                     </div>
 
                     <!-- Осадки -->
@@ -230,25 +224,26 @@
             let currentUser = null;
             const intensityNames = ['Слабые', 'Средние', 'Сильные'];
             
-            const weatherIcons = {
-                'sunny': '☀️',
-                'cloudy': '⛅',
-                'overcast': '☁️',
-                'light_snow': '🌨️',
-                'heavy_snow': '❄️❄️',
-                'rain': '🌧️',
-                'sleet': '🌨️🌧️'
-            };
+            const weatherSlider = document.getElementById('weatherSlider');
+            const weatherValue = document.getElementById('weatherValue');
+            const weatherInput = document.getElementById('weather');
             
-            const weatherNames = {
-                'sunny': 'Солнечно',
-                'cloudy': 'Облачно',
-                'overcast': 'Пасмурно',
-                'light_snow': 'Слабый снег',
-                'heavy_snow': 'Сильный снег',
-                'rain': 'Дождь',
-                'sleet': 'Снег с дождём'
-            };
+            const weatherOptions = [
+                { value: 'any', label: '🌍 Любая' },
+                { value: 'sunny', label: '☀️ Солнечно' },
+                { value: 'cloudy', label: '⛅ Облачно' },
+                { value: 'overcast', label: '☁️ Пасмурно' },
+                { value: 'light_snow', label: '🌨️ Слабый снег' },
+                { value: 'heavy_snow', label: '❄️ Сильный снег' },
+                { value: 'rain', label: '🌧️ Дождь' },
+                { value: 'sleet', label: '🌨️ Снег с дождём' }
+            ];
+            
+            weatherSlider.addEventListener('input', () => {
+                const idx = weatherSlider.value;
+                weatherValue.textContent = weatherOptions[idx].label;
+                weatherInput.value = weatherOptions[idx].value;
+            });
 
             async function init() {
                 const { data: { user } } = await supabase.auth.getUser();
