@@ -3,16 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Подбор смазки | WaxCrowd</title>
+    <title>Подбор смазки | Waxsense</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .tab-btn { padding: 12px 24px; font-weight: 500; border-bottom: 2px solid transparent; transition: all 0.2s; }
         .tab-btn.active { color: #0d9488; border-bottom-color: #0d9488; }
         .slider-label { display: flex; justify-content: space-between; margin-top: 4px; font-size: 13px; color: #6b7280; }
-        .precip-btn { padding: 10px; border: 1px solid #d1d5db; border-radius: 12px; text-align: center; cursor: pointer; transition: all 0.2s; }
-        .precip-btn.active { border-color: #0d9488; background: #f0fdfa; }
-        .precip-btn span { font-size: 24px; display: block; margin-bottom: 4px; }
         
         #reportModal {
             display: none !important;
@@ -52,7 +49,7 @@
 <body class="bg-gray-50 min-h-screen">
     <nav class="bg-white border-b">
         <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
-            <a href="index.html" class="text-2xl font-bold text-teal-600">❄️ WaxCrowd</a>
+            <a href="index.html" class="text-2xl font-bold text-teal-600">❄️ Waxsense</a>
             <div class="flex gap-4">
                 <a href="index.html" class="text-gray-600">Главная</a>
                 <a href="profile.html" class="text-gray-600">Профиль</a>
@@ -125,24 +122,6 @@
                         </div>
                         <input type="hidden" id="weather" value="any">
                     </div>
-
-                    <!-- Осадки -->
-                    <div>
-                        <label class="block text-sm font-medium mb-2">Осадки</label>
-                        <div class="grid grid-cols-4 gap-2" id="precipTypeGroup">
-                            <div class="precip-btn active" data-type="none"><span>☀️</span>Без осадков</div>
-                            <div class="precip-btn" data-type="snow"><span>❄️</span>Снег</div>
-                            <div class="precip-btn" data-type="rain"><span>🌧️</span>Дождь</div>
-                            <div class="precip-btn" data-type="mixed"><span>🌨️</span>Смешанные</div>
-                        </div>
-                        <input type="hidden" id="precipitationType" value="none">
-                        
-                        <div id="intensityGroup" class="mt-3 hidden">
-                            <label class="block text-sm font-medium mb-1">Интенсивность: <span id="intensityValue">Средние</span></label>
-                            <input type="range" id="intensity" min="1" max="3" value="2" step="1" class="w-full">
-                            <div class="slider-label"><span>Слабые</span><span>Средние</span><span>Сильные</span></div>
-                        </div>
-                    </div>
                 </div>
 
                 <!-- Спойлер Дополнительно -->
@@ -158,7 +137,7 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium mb-1">Состояние трассы: <span id="trackValue">Любое</span></label>
+                        <label class="block text-sm font-medium mb-1">Состояние трассы:</label>
                         <select id="trackCondition" class="w-full border rounded-xl p-3">
                             <option value="any" selected>Любое</option>
                             <option value="Лёд">Лёд</option>
@@ -172,7 +151,7 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium mb-1">Тип снега: <span id="snowTypeValue">Любой</span></label>
+                        <label class="block text-sm font-medium mb-1">Тип снега:</label>
                         <select id="snowType" class="w-full border rounded-xl p-3">
                             <option value="any" selected>Любой</option>
                             <option value="Свежевыпавший">Свежевыпавший</option>
@@ -212,7 +191,6 @@
             const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
             let currentUser = null;
-            const intensityNames = ['Слабые', 'Средние', 'Сильные'];
             
             const weatherIcons = {
                 'sunny': '☀️', 'cloudy': '⛅', 'overcast': '☁️',
@@ -298,18 +276,21 @@
             // Слайдеры температуры
             const tempFrom = document.getElementById('tempFrom');
             const tempTo = document.getElementById('tempTo');
-            document.getElementById('tempFrom').addEventListener('input', () => {
-                document.getElementById('tempFromValue').textContent = tempFrom.value;
+            const tempFromValue = document.getElementById('tempFromValue');
+            const tempToValue = document.getElementById('tempToValue');
+            
+            tempFrom.addEventListener('input', () => {
+                tempFromValue.textContent = tempFrom.value;
                 if (parseInt(tempFrom.value) > parseInt(tempTo.value)) {
                     tempTo.value = tempFrom.value;
-                    document.getElementById('tempToValue').textContent = tempFrom.value;
+                    tempToValue.textContent = tempFrom.value;
                 }
             });
-            document.getElementById('tempTo').addEventListener('input', () => {
-                document.getElementById('tempToValue').textContent = tempTo.value;
+            tempTo.addEventListener('input', () => {
+                tempToValue.textContent = tempTo.value;
                 if (parseInt(tempTo.value) < parseInt(tempFrom.value)) {
                     tempFrom.value = tempTo.value;
-                    document.getElementById('tempFromValue').textContent = tempTo.value;
+                    tempFromValue.textContent = tempTo.value;
                 }
             });
 
@@ -327,8 +308,9 @@
                 { value: 'rain', label: '🌧️ Дождь' },
                 { value: 'sleet', label: '🌨️ Снег с дождём' }
             ];
+            
             weatherSlider.addEventListener('input', () => {
-                const idx = weatherSlider.value;
+                const idx = parseInt(weatherSlider.value);
                 weatherValue.textContent = weatherOptions[idx].label;
                 weatherInput.value = weatherOptions[idx].value;
             });
@@ -338,24 +320,6 @@
                 const section = document.getElementById('detailsSection');
                 section.classList.toggle('hidden');
                 this.textContent = section.classList.contains('hidden') ? '▶ ⚙️ Дополнительно' : '▼ ⚙️ Дополнительно';
-            });
-
-            // Осадки
-            const precipBtns = document.querySelectorAll('.precip-btn');
-            const precipTypeInput = document.getElementById('precipitationType');
-            const intensityGroup = document.getElementById('intensityGroup');
-            precipBtns.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    precipBtns.forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    precipTypeInput.value = btn.dataset.type;
-                    intensityGroup.classList.toggle('hidden', btn.dataset.type === 'none');
-                });
-            });
-
-            const intensitySlider = document.getElementById('intensity');
-            intensitySlider.addEventListener('input', () => {
-                document.getElementById('intensityValue').textContent = intensityNames[intensitySlider.value - 1];
             });
 
             // Поиск
@@ -370,7 +334,6 @@
                     temp_from: parseInt(tempFrom.value),
                     temp_to: parseInt(tempTo.value),
                     weather: weatherInput.value,
-                    precipitation_type: precipTypeInput.value,
                     track_condition: document.getElementById('trackCondition').value,
                     snow_type: document.getElementById('snowType').value
                 };
@@ -380,13 +343,13 @@
                     .select(`
                         id, user_id, start_date, country, city, location_name,
                         temp_from, temp_to, weather, track_condition, snow_type, comment,
-                        snowflakes_total, snowflakes_count,
+                        votes_sum, votes_count, rating,
                         ski_brand, ski_model, ski_base, ski_structure,
                         wax_layers(wax_brand, wax_name, temp_range, notes)
                     `)
                     .eq('report_type', filters.report_type)
-                    .gte('temp_from', filters.temp_from - 3)
-                    .lte('temp_to', filters.temp_to + 3)
+                    .gte('temp_from', filters.temp_from - 5)
+                    .lte('temp_to', filters.temp_to + 5)
                     .limit(15);
 
                 if (filters.country !== 'Любая') query = query.eq('country', filters.country);
@@ -410,8 +373,8 @@
                 profiles?.forEach(p => { profilesMap[p.id] = p; });
 
                 const sorted = reports.sort((a, b) => {
-                    const scoreA = (a.snowflakes_total / (a.snowflakes_count || 1)) + (profilesMap[a.user_id]?.user_rating || 0);
-                    const scoreB = (b.snowflakes_total / (b.snowflakes_count || 1)) + (profilesMap[b.user_id]?.user_rating || 0);
+                    const scoreA = (a.votes_count > 0 ? a.votes_sum / a.votes_count : 0) + (profilesMap[a.user_id]?.user_rating || 0);
+                    const scoreB = (b.votes_count > 0 ? b.votes_sum / b.votes_count : 0) + (profilesMap[b.user_id]?.user_rating || 0);
                     return scoreB - scoreA;
                 });
 
@@ -426,7 +389,7 @@
                 }
                 
                 container.innerHTML = reports.map(r => {
-                    const avg = r.snowflakes_count > 0 ? (r.snowflakes_total / r.snowflakes_count).toFixed(1) : '—';
+                    const avg = r.votes_count > 0 ? (r.votes_sum / r.votes_count).toFixed(1) : '—';
                     const author = profilesMap[r.user_id]?.full_name || profilesMap[r.user_id]?.username || 'Аноним';
                     const authorRating = profilesMap[r.user_id]?.user_rating?.toFixed(1) || '—';
                     const waxes = r.wax_layers?.map(l => l.wax_name).join(' + ') || '—';
@@ -441,7 +404,7 @@
                                     <span class="text-sm text-gray-500 ml-2">${new Date(r.start_date).toLocaleDateString('ru-RU')}</span>
                                 </div>
                                 <div class="flex items-center gap-2">
-                                    <span class="text-yellow-500">❄️ ${avg}</span>
+                                    <span class="text-yellow-500">⭐ ${r.rating}/10</span>
                                 </div>
                             </div>
                             <div class="grid grid-cols-3 gap-2 text-sm mb-2">
@@ -454,7 +417,7 @@
                             </div>
                             <div class="flex justify-between text-sm text-gray-500">
                                 <span>👤 ${author} (${authorRating})</span>
-                                <span>${r.snowflakes_count || 0} оценок</span>
+                                <span>❄️ ${avg} (${r.votes_count || 0} оценок)</span>
                             </div>
                         </div>
                     `;
@@ -497,7 +460,7 @@
                 }
 
                 const author = report.profiles?.full_name || report.profiles?.username || 'Аноним';
-                const avg = report.snowflakes_count > 0 ? (report.snowflakes_total / report.snowflakes_count).toFixed(1) : '—';
+                const avg = report.votes_count > 0 ? (report.votes_sum / report.votes_count).toFixed(1) : '—';
                 const weatherIcon = weatherIcons[report.weather] || '';
                 const weatherName = weatherNames[report.weather] || '';
 
@@ -510,6 +473,7 @@
                             <div><span class="text-gray-500">Погода:</span> ${weatherIcon} ${weatherName}</div>
                             <div><span class="text-gray-500">Трасса:</span> ${report.track_condition}</div>
                             <div><span class="text-gray-500">Снег:</span> ${report.snow_type || '—'}</div>
+                            <div><span class="text-gray-500">Оценка автора:</span> ⭐ ${report.rating}/10</div>
                         </div>
                         <div><span class="text-gray-500">Лыжи:</span> ${report.ski_brand || '—'} ${report.ski_model || ''} • ${report.ski_base || '—'} • ${report.ski_structure || '—'}</div>
                         <div>
@@ -521,7 +485,7 @@
                         ${report.comment ? `<div class="bg-gray-50 p-3 rounded-lg">💬 ${report.comment}</div>` : ''}
                         <div class="flex justify-between items-center pt-3 border-t">
                             <span>👤 ${author}</span>
-                            <span>❄️ ${avg} (${report.snowflakes_count} оценок)</span>
+                            <span>❄️ ${avg} (${report.votes_count} оценок)</span>
                         </div>
                     </div>
                 `;
