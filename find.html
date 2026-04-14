@@ -361,17 +361,48 @@
 
                 let query = supabase
                     .from('reports')
-                    .select(`
-                        id, user_id, start_date, country, city, location_name,
-                        temp_from, temp_to, weather, track_condition, snow_type, comment,
-                        votes_sum, votes_count, rating,
-                        ski_brand, ski_model, ski_base, ski_structure,
-                        wax_layers(wax_brand, wax_name, temp_range, notes)
-                    `)
-                    .eq('report_type', filters.report_type)
-                    .gte('temp_from', filters.temp_from - 5)
-                    .lte('temp_to', filters.temp_to + 5)
-                    .limit(15);
+                    .select(`*`)
+                    .eq('report_type', filters.report_type);
+                
+                console.log('1️⃣ Только report_type');
+                
+                // Шаг 2: добавляем температуру
+                query = query.gte('temp_from', filters.temp_from - 5);
+                query = query.lte('temp_to', filters.temp_to + 5);
+                console.log('2️⃣ Добавлена температура');
+                
+                // Шаг 3: добавляем страну (если не Любая)
+                if (filters.country !== 'Любая') {
+                    query = query.eq('country', filters.country);
+                    console.log('3️⃣ Добавлена страна:', filters.country);
+                }
+                
+                // Шаг 4: добавляем город
+                if (filters.city) {
+                    query = query.ilike('city', `%${filters.city}%`);
+                    console.log('4️⃣ Добавлен город:', filters.city);
+                }
+                
+                // Шаг 5: добавляем погоду
+                if (filters.weather !== 'any') {
+                    query = query.eq('weather', filters.weather);
+                    console.log('5️⃣ Добавлена погода:', filters.weather);
+                }
+                
+                // Шаг 6: добавляем трассу
+                if (filters.track_condition !== 'any') {
+                    query = query.eq('track_condition', filters.track_condition);
+                    console.log('6️⃣ Добавлена трасса:', filters.track_condition);
+                }
+                
+                // Шаг 7: добавляем тип снега
+                if (filters.snow_type !== 'any') {
+                    query = query.eq('snow_type', filters.snow_type);
+                    console.log('7️⃣ Добавлен снег:', filters.snow_type);
+                }
+                
+                const { data: reports, error } = await query;
+                console.log('📊 Найдено отчётов:', reports?.length, error);
 
                 const { data: reports, error } = await query;
                 console.log('📊 Найдено отчётов:', reports?.length, reports, error);
