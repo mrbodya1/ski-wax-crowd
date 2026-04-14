@@ -111,8 +111,15 @@
             let currentProfile = null;
             let currentRating = 0;
 
-            const weatherIcons = { sunny: '☀️', cloudy: '⛅', overcast: '☁️', snow: '🌨️' };
-            const weatherNames = { sunny: 'Солнечно', cloudy: 'Облачно', overcast: 'Пасмурно', snow: 'Снегопад' };
+            const weatherIcons = {
+                'sunny': '☀️', 'cloudy': '⛅', 'overcast': '☁️',
+                'light_snow': '🌨️', 'heavy_snow': '❄️', 'rain': '🌧️', 'sleet': '🌨️'
+            };
+            
+            const weatherNames = {
+                'sunny': 'Солнечно', 'cloudy': 'Облачно', 'overcast': 'Пасмурно',
+                'light_snow': 'Слабый снег', 'heavy_snow': 'Сильный снег', 'rain': 'Дождь', 'sleet': 'Снег с дождём'
+            };
 
             async function init() {
                 const { data: { user } } = await supabase.auth.getUser();
