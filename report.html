@@ -87,37 +87,15 @@
                     </div>
                 </div>
 
-                <!-- 2. ПОГОДА -->
-                <div class="border rounded-lg p-4 bg-gray-50 mt-4">
-                    <h2 class="font-semibold mb-3">🌡️ Погодные условия</h2>
-                    
-                    <div class="grid grid-cols-2 gap-3 mb-3">
-                        <div>
-                            <label class="block text-sm font-medium mb-1">Температура от: <span id="tempFromValue">-5</span>°C</label>
-                            <input type="range" id="tempFrom" min="-30" max="15" value="-5" step="1" class="w-full">
-                            <div class="slider-label"><span>-30°C</span><span>0°C</span><span>+15°C</span></div>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium mb-1">Температура до: <span id="tempToValue">-2</span>°C</label>
-                            <input type="range" id="tempTo" min="-30" max="15" value="-2" step="1" class="w-full">
-                            <div class="slider-label"><span>-30°C</span><span>0°C</span><span>+15°C</span></div>
-                        </div>
+                <!-- Погода (слайдер) -->
+                <div>
+                    <label class="block text-sm font-medium mb-1">Погода: <span id="weatherValue">☀️ Солнечно</span></label>
+                    <input type="range" id="weatherSlider" min="1" max="7" value="1" step="1" class="w-full">
+                    <div class="slider-label">
+                        <span>☀️</span><span>⛅</span><span>☁️</span><span>🌨️</span><span>❄️</span><span>🌧️</span><span>🌨️</span>
                     </div>
-                    
-                    <!-- Погода (иконки) -->
-                    <div class="mb-3">
-                        <label class="block text-sm font-medium mb-2">Погода</label>
-                        <div class="grid grid-cols-4 gap-2" id="weatherGroup">
-                            <div class="weather-btn active" data-weather="sunny"><span>☀️</span>Солнечно</div>
-                            <div class="weather-btn" data-weather="cloudy"><span>⛅</span>Облачно</div>
-                            <div class="weather-btn" data-weather="overcast"><span>☁️</span>Пасмурно</div>
-                            <div class="weather-btn" data-weather="light_snow"><span>🌨️</span>Слабый снег</div>
-                            <div class="weather-btn" data-weather="heavy_snow"><span>❄️❄️</span>Сильный снег</div>
-                            <div class="weather-btn" data-weather="rain"><span>🌧️</span>Дождь</div>
-                            <div class="weather-btn" data-weather="sleet"><span>🌨️🌧️</span>Снег с дождём</div>
-                        </div>
-                        <input type="hidden" id="weather" value="sunny">
-                    </div>
+                    <input type="hidden" id="weather" value="sunny">
+                </div>
                     
                     <div>
                         <label class="block text-sm font-medium mb-1">Состояние <span id="trackLabel">трассы</span>: <span id="trackValue">Жесткая</span></label>
@@ -217,6 +195,25 @@
             const reportType = document.getElementById('reportType');
             const trackLabel = document.getElementById('trackLabel');
             const waxTitle = document.getElementById('waxSectionTitle');
+            const weatherSlider = document.getElementById('weatherSlider');
+            const weatherValue = document.getElementById('weatherValue');
+            const weatherInput = document.getElementById('weather');
+            
+            const weatherOptions = [
+                { value: 'sunny', label: '☀️ Солнечно' },
+                { value: 'cloudy', label: '⛅ Облачно' },
+                { value: 'overcast', label: '☁️ Пасмурно' },
+                { value: 'light_snow', label: '🌨️ Слабый снег' },
+                { value: 'heavy_snow', label: '❄️ Сильный снег' },
+                { value: 'rain', label: '🌧️ Дождь' },
+                { value: 'sleet', label: '🌨️ Снег с дождём' }
+            ];
+            
+            weatherSlider.addEventListener('input', () => {
+                const idx = weatherSlider.value - 1;
+                weatherValue.textContent = weatherOptions[idx].label;
+                weatherInput.value = weatherOptions[idx].value;
+            });
 
             tabGlide.addEventListener('click', () => {
                 tabGlide.classList.add('active'); tabGrip.classList.remove('active');
