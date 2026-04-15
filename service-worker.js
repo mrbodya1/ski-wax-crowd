@@ -1,27 +1,21 @@
 // WaxSense Service Worker
-const CACHE_NAME = 'waxsense-v1';
-const urlsToCache = [
-  '/ski-wax-crowd/',
-  '/ski-wax-crowd/index.html',
-  '/ski-wax-crowd/auth.html',
-  '/ski-wax-crowd/report.html',
-  '/ski-wax-crowd/find.html',
-  '/ski-wax-crowd/profile.html',
-  '/ski-wax-crowd/admin.html',
-  '/ski-wax-crowd/manifest.json'
+const CACHE_NAME = 'waxsense-v3';
+
+// НЕ кэшируем эти URL (пропускаем напрямую)
+const BYPASS_URLS = [
+  'supabase.co',
+  'anysqgzlkwjzbkphmsdb'
 ];
 
-// Установка Service Worker
+// Установка
 self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(urlsToCache))
-      .then(() => self.skipWaiting())
-  );
+  console.log('🛠️ SW: install');
+  self.skipWaiting();
 });
 
-// Активация и очистка старых кэшей
+// Активация
 self.addEventListener('activate', event => {
+  console.log('🛠️ SW: activate');
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
@@ -32,13 +26,20 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Перехват запросов (сначала кэш, потом сеть)
+// Перехват запросов
 self.addEventListener('fetch', event => {
-  // Не кэшируем API-запросы к Supabase
-  if (event.request.url.includes('supabase.co')) {
+  const url = event.request.url;
+  
+  // Проверяем, нужно ли пропустить URL
+  const shouldBypass = BYPASS_URLS.some(bypass => url.includes(bypass));
+  
+  if (shouldBypass) {
+    // Пропускаем запросы к Supabase — пусть идут напрямую
+    console.log('🔄 SW: bypass', url.substring(0, 60));
     return;
   }
   
+  // Для всех остальных — обычная обработка
   event.respondWith(
     caches.match(event.request)
       .then(response => response || fetch(event.request))
