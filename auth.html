@@ -48,6 +48,7 @@
     </div>
 
     <script>
+        // Service Worker
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('service-worker.js')
                 .then(reg => console.log('✅ SW registered'))
@@ -57,7 +58,10 @@
         (function() {
             const SUPABASE_URL = 'https://anysqgzlkwjzbkphmsdb.supabase.co';
             const SUPABASE_ANON_KEY = 'sb_publishable_nms9x0qfeR7JmtMls6vU6Q_HzRIKaWk';
+            
+            console.log('🚀 Инициализация Supabase...');
             const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            console.log('✅ Supabase создан');
             
             const loginTab = document.getElementById('loginTab');
             const signupTab = document.getElementById('signupTab');
@@ -65,6 +69,7 @@
             const signupForm = document.getElementById('signupForm');
             
             loginTab.addEventListener('click', () => {
+                console.log('📑 Переключение на вкладку Вход');
                 loginTab.classList.add('border-b-2', 'border-teal-600', 'text-teal-600');
                 signupTab.classList.remove('border-b-2', 'border-teal-600', 'text-teal-600');
                 signupTab.classList.add('text-gray-500');
@@ -73,6 +78,7 @@
             });
             
             signupTab.addEventListener('click', () => {
+                console.log('📑 Переключение на вкладку Регистрация');
                 signupTab.classList.add('border-b-2', 'border-teal-600', 'text-teal-600');
                 loginTab.classList.remove('border-b-2', 'border-teal-600', 'text-teal-600');
                 loginTab.classList.add('text-gray-500');
@@ -80,52 +86,113 @@
                 loginForm.classList.add('hidden');
             });
             
+            // ВХОД
             loginForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                console.log('🔘 Кнопка Войти нажата');
+                console.log('🔘 Кнопка ВОЙТИ нажата');
+                alert('🔘 Кнопка ВОЙТИ нажата');
                 
                 const email = document.getElementById('loginEmail').value;
                 const password = document.getElementById('loginPassword').value;
                 
                 console.log('📧 Email:', email);
+                console.log('🔑 Пароль:', password ? '***' : 'пусто');
+                
+                if (!email || !password) {
+                    console.log('❌ Пустые поля');
+                    alert('❌ Введите email и пароль');
+                    document.getElementById('message').innerHTML = '<span class="text-red-600">❌ Введите email и пароль</span>';
+                    return;
+                }
                 
                 try {
+                    console.log('🔄 Отправка запроса в Supabase...');
                     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-                    console.log('✅ Ответ:', data, error);
+                    
+                    console.log('✅ Ответ получен:', { data: !!data, error: error?.message });
                     
                     if (error) {
+                        console.error('❌ Ошибка входа:', error.message);
+                        alert('❌ ' + error.message);
                         document.getElementById('message').innerHTML = `<span class="text-red-600">❌ ${error.message}</span>`;
                     } else {
+                        console.log('🎉 Вход успешен!');
+                        alert('✅ Вход успешен!');
                         document.getElementById('message').innerHTML = '<span class="text-green-600">✅ Успешный вход!</span>';
                         setTimeout(() => { window.location.href = 'index.html'; }, 500);
                     }
                 } catch (err) {
-                    console.error('🔥 Ошибка:', err);
+                    console.error('🔥 Критическая ошибка:', err);
+                    alert('🔥 Ошибка соединения: ' + err.message);
                     document.getElementById('message').innerHTML = '<span class="text-red-600">❌ Ошибка соединения</span>';
                 }
             });
             
+            // РЕГИСТРАЦИЯ
             signupForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
+                console.log('🟢 Кнопка РЕГИСТРАЦИЯ нажата');
+                alert('🟢 Кнопка РЕГИСТРАЦИЯ нажата');
+                
                 const email = document.getElementById('signupEmail').value;
                 const name = document.getElementById('signupName').value;
                 const password = document.getElementById('signupPassword').value;
                 const confirm = document.getElementById('signupConfirm').value;
                 
+                console.log('📧 Email:', email);
+                console.log('👤 Имя:', name);
+                
+                if (!email || !password) {
+                    alert('❌ Введите email и пароль');
+                    return;
+                }
+                
                 if (password !== confirm) {
+                    alert('❌ Пароли не совпадают');
                     document.getElementById('message').innerHTML = '<span class="text-red-600">❌ Пароли не совпадают</span>';
                     return;
                 }
                 
-                const { error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: name } } });
-                if (error) {
-                    document.getElementById('message').innerHTML = `<span class="text-red-600">❌ ${error.message}</span>`;
-                } else {
-                    document.getElementById('message').innerHTML = '<span class="text-green-600">✅ Проверьте email!</span>';
+                try {
+                    console.log('🔄 Отправка запроса регистрации...');
+                    const { data, error } = await supabase.auth.signUp({ 
+                        email, 
+                        password, 
+                        options: { data: { full_name: name } } 
+                    });
+                    
+                    console.log('✅ Ответ регистрации:', { data: !!data, error: error?.message });
+                    
+                    if (error) {
+                        console.error('❌ Ошибка регистрации:', error.message);
+                        alert('❌ ' + error.message);
+                        document.getElementById('message').innerHTML = `<span class="text-red-600">❌ ${error.message}</span>`;
+                    } else {
+                        console.log('🎉 Регистрация успешна!');
+                        alert('✅ Регистрация успешна! Проверьте email для подтверждения.');
+                        document.getElementById('message').innerHTML = '<span class="text-green-600">✅ Проверьте email!</span>';
+                        setTimeout(() => {
+                            loginTab.click();
+                        }, 2000);
+                    }
+                } catch (err) {
+                    console.error('🔥 Критическая ошибка регистрации:', err);
+                    alert('🔥 Ошибка: ' + err.message);
                 }
             });
             
-            supabase.auth.getUser().then(({ data: { user } }) => { if (user) window.location.href = 'index.html'; });
+            // Проверка, не залогинен ли уже
+            supabase.auth.getUser().then(({ data: { user } }) => {
+                console.log('🔍 Проверка текущей сессии:', user ? 'залогинен' : 'не залогинен');
+                if (user) {
+                    console.log('👤 Пользователь уже в системе, редирект на главную');
+                    window.location.href = 'index.html';
+                }
+            }).catch(err => {
+                console.error('❌ Ошибка проверки сессии:', err);
+            });
+            
+            console.log('📋 Страница auth.html загружена и готова');
         })();
     </script>
 </body>
